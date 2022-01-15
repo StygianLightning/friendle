@@ -1362,6 +1362,8 @@ dependencies = [
  "anyhow",
  "futures",
  "itertools",
+ "serde",
+ "serde_json",
  "serenity",
  "tokio",
 ]

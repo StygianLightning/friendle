@@ -1,3 +1,4 @@
+mod dictionary;
 mod commands;
 use commands::help::*;
 use commands::play::*;
@@ -23,6 +24,8 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.name);
     }
 }
+
+pub const DICT_PATH : &str = "./dictionary.txt";
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
