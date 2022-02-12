@@ -1,4 +1,6 @@
 mod commands;
+mod constants;
+mod model;
 mod wordlist;
 
 use crate::wordlist::WordList;
