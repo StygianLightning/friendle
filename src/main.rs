@@ -1,11 +1,10 @@
 mod commands;
-mod dictionary;
+mod wordlist;
 
-use crate::dictionary::DictionaryData;
+use crate::wordlist::WordList;
 use commands::add::*;
 use commands::help::*;
 use commands::play::*;
-use dictionary::Dictionary;
 use serenity::prelude::RwLock;
 
 use anyhow::anyhow;
@@ -47,9 +46,9 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
 
     let dict_path = PathBuf::from(dict_path);
 
-    let dict: Dictionary = std::fs::read_to_string(&dict_path)
+    let dict: WordList = std::fs::read_to_string(&dict_path)
         .map(|json| {
-            serde_json::from_str::<Dictionary>(&json).expect("Failed to load saved channel links")
+            serde_json::from_str::<WordList>(&json).expect("Failed to load saved channel links")
         })
         .unwrap_or_else(|_| Default::default());
 
@@ -69,7 +68,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let dict = Arc::new(RwLock::new(dict));
     {
         let mut data = client.data.write().await;
-        data.insert::<DictionaryData>(Arc::clone(&dict));
+        data.insert::<WordList>(Arc::clone(&dict));
     }
 
     if let Err(why) = client.start().await {
