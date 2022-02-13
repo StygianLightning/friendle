@@ -1,6 +1,6 @@
+use super::validate_word::validate_word;
 use crate::constants::WORD_LENGTH;
-use anyhow::bail;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Evaluation {
@@ -9,13 +9,12 @@ pub enum Evaluation {
     Correct,
 }
 
-pub fn evaluate(guess: &str, solution: &str) -> anyhow::Result<Vec<Evaluation>> {
-    if guess.len() != WORD_LENGTH {
-        bail!("Expected word of length {WORD_LENGTH}, received {guess}");
-    }
-    if !(guess.is_ascii() && guess.chars().all(|c| c.is_alphabetic())) {
-        bail!("Only English words with letters A-Z are supported");
-    }
+pub fn evaluate(
+    guess: &str,
+    solution: &str,
+    word_list: &HashSet<String>,
+) -> anyhow::Result<Vec<Evaluation>> {
+    validate_word(guess, word_list)?;
     let chars_guess = guess.chars().collect::<Vec<_>>();
     let chars_solution = solution.chars().collect::<Vec<_>>();
     let mut evaluation = vec![Evaluation::Absent; WORD_LENGTH as usize];
@@ -56,7 +55,8 @@ mod tests {
     #[test]
     fn test_correct_eval() {
         let word = "tales";
-        let eval = evaluate(word, word).unwrap();
+        let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
+        let eval = evaluate(word, word, &word_list).unwrap();
         assert_eq!(eval, vec![Evaluation::Correct; WORD_LENGTH]);
     }
 
@@ -64,21 +64,24 @@ mod tests {
     fn test_word_invalid_len() {
         let word = "abcdef";
         let solution = "abcde";
-        assert!(evaluate(word, solution).is_err());
+        let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
+        assert!(evaluate(word, solution, &word_list).is_err());
     }
 
     #[test]
     fn test_word_invalid_letter() {
         let word = "naïve";
         let solution = "abcde";
-        assert!(evaluate(word, solution).is_err());
+        let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
+        assert!(evaluate(word, solution, &word_list).is_err());
     }
 
     #[test]
     fn test_partial_eval() {
         let word = "abbac";
         let solution = "bdaab";
-        let eval = evaluate(word, solution).unwrap();
+        let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
+        let eval = evaluate(word, solution, &word_list).unwrap();
         assert_eq!(
             &eval,
             &[
