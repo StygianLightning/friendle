@@ -3,6 +3,7 @@ mod constants;
 mod model;
 mod wordlist;
 
+use crate::model::validate_word::validate_word_format;
 use crate::wordlist::WordList;
 use commands::add::*;
 use commands::help::*;
@@ -49,7 +50,14 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let word_lines = words_string.lines();
     let mut words: HashSet<String> = HashSet::new();
     for word in word_lines {
-        words.insert(String::from(word));
+        match validate_word_format(word) {
+            Ok(_) => {
+                words.insert(String::from(word));
+            }
+            Err(err) => {
+                eprintln!("{err}");
+            }
+        }
     }
     let word_list = WordList { words };
 
