@@ -2,7 +2,7 @@ pub const MULTIPLIER: u32 = 30;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub struct Code {
-    value: u32,
+    pub value: u32,
 }
 
 pub fn encode(word: &str) -> Code {

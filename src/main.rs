@@ -6,6 +6,7 @@ mod wordlist;
 use crate::model::validate_word::validate_word_format;
 use crate::wordlist::WordList;
 use commands::add::*;
+use commands::encode::*;
 use commands::help::*;
 use commands::play::*;
 use serenity::prelude::RwLock;
@@ -22,7 +23,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 #[group]
-#[commands(add, play)]
+#[commands(add, play, encode)]
 struct General;
 
 struct Handler;
