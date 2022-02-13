@@ -11,7 +11,6 @@ use commands::play::*;
 use serenity::prelude::RwLock;
 use std::collections::HashSet;
 
-use anyhow::anyhow;
 use serenity::async_trait;
 use serenity::client::{Client, Context, EventHandler};
 use serenity::framework::standard::{macros::group, StandardFramework};
