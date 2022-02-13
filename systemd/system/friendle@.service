@@ -1,0 +1,18 @@
+[Unit]
+Description=friendle
+
+[Service]
+# Bot Discord token
+Environment=FRIENDLE_DISCORD_TOKEN=TOKEN_HERE
+# Bot path
+ExecStart=/usr/bin/bots/friendle
+User=styg
+Group=styg
+Type=idle
+Restart=always
+RestartSec=15
+RestartPreventExitStatus=0
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

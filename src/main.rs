@@ -8,6 +8,7 @@ use commands::add::*;
 use commands::help::*;
 use commands::play::*;
 use serenity::prelude::RwLock;
+use std::collections::HashSet;
 
 use anyhow::anyhow;
 use serenity::async_trait;
@@ -33,26 +34,24 @@ impl EventHandler for Handler {
     }
 }
 
-pub const DICT_PATH_ENV_VAR: &str = "DICT_PATH";
-pub const WORDLE_DISCORD_TOKEN: &str = "WORDLE_DISCORD_TOKEN";
+pub const WORD_LIST_PATH_ENV_VAR: &str = "WORD_LIST_PATH";
+pub const DISCORD_TOKEN: &str = "FRIENDLE_DISCORD_TOKEN";
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
-    let dict_path =
-        std::env::var(DICT_PATH_ENV_VAR).unwrap_or_else(|_| String::from("dictionary.json"));
-    println!("channel links env var: {}", dict_path);
-
-    if !dict_path.ends_with(".json") {
-        anyhow!("Channel links env var is not pointing to a json file!");
-    }
+    let dict_path = std::env::var(WORD_LIST_PATH_ENV_VAR)
+        .unwrap_or_else(|_| String::from("resources/wordlist.txt"));
+    println!("word list path env var: {}", dict_path);
 
     let dict_path = PathBuf::from(dict_path);
 
-    let dict: WordList = std::fs::read_to_string(&dict_path)
-        .map(|json| {
-            serde_json::from_str::<WordList>(&json).expect("Failed to load saved channel links")
-        })
-        .unwrap_or_else(|_| Default::default());
+    let words_string = std::fs::read_to_string(&dict_path).expect("Failed to load word list");
+    let word_lines = words_string.lines();
+    let mut words: HashSet<String> = HashSet::new();
+    for word in word_lines {
+        words.insert(String::from(word));
+    }
+    let word_list = WordList { words };
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("."))
@@ -60,14 +59,14 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         .group(&GENERAL_GROUP);
 
     // Login with a bot token from the environment
-    let token = env::var(WORDLE_DISCORD_TOKEN).expect("token");
+    let token = env::var(DISCORD_TOKEN).expect("token");
     let mut client = Client::builder(token)
         .event_handler(Handler)
         .framework(framework)
         .await
         .expect("Error creating client");
 
-    let dict = Arc::new(RwLock::new(dict));
+    let dict = Arc::new(RwLock::new(word_list));
     {
         let mut data = client.data.write().await;
         data.insert::<WordList>(Arc::clone(&dict));
