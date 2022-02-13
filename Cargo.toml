@@ -1,5 +1,5 @@
 [package]
-name = "wordlebot"
+name = "friendle"
 version = "0.1.0"
 authors = ["Stygeon <denrellum@gmail.com>"]
 edition = "2021"
