@@ -12,9 +12,9 @@ pub fn validate_word_format(word: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn validate_word(word: &str, word_list: &HashSet<String>) -> Result<()> {
+pub fn validate_word(word: &str, word_list: &HashSet<String>, solution: &str) -> Result<()> {
     validate_word_format(word)?;
-    if !word_list.contains(word) {
+    if word != solution && !word_list.contains(word) {
         bail!("Invalid word {word}");
     }
     Ok(())
@@ -29,7 +29,7 @@ mod tests {
         let word = "abcdef";
         let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
         assert!(validate_word_format(word).is_err());
-        assert!(validate_word(word, &word_list).is_err());
+        assert!(validate_word(word, &word_list, "abbac").is_err());
     }
 
     #[test]
@@ -37,7 +37,15 @@ mod tests {
         let word = "naïve";
         let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
         assert!(validate_word_format(word).is_err());
-        assert!(validate_word(word, &word_list).is_err());
+        assert!(validate_word(word, &word_list, word).is_err());
+    }
+
+    #[test]
+    fn test_word_valid_when_solution_and_format_valid() {
+        let word = "abcde";
+        let word_list = HashSet::from_iter(std::iter::once(String::from("tales")));
+        assert!(validate_word_format(word).is_ok());
+        assert!(validate_word(word, &word_list, word).is_ok());
     }
 
     #[test]
@@ -45,6 +53,6 @@ mod tests {
         let word = "abbac";
         let word_list = HashSet::from_iter(std::iter::once(String::from(word)));
         assert!(validate_word_format(word).is_ok());
-        assert!(validate_word(word, &word_list).is_ok());
+        assert!(validate_word(word, &word_list, "abcdef").is_ok());
     }
 }

@@ -14,7 +14,7 @@ pub fn evaluate(
     solution: &str,
     word_list: &HashSet<String>,
 ) -> anyhow::Result<Vec<Evaluation>> {
-    validate_word(guess, word_list)?;
+    validate_word(guess, word_list, solution)?;
     let chars_guess = guess.chars().collect::<Vec<_>>();
     let chars_solution = solution.chars().collect::<Vec<_>>();
     let mut evaluation = vec![Evaluation::Absent; WORD_LENGTH as usize];

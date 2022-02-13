@@ -1,5 +1,5 @@
 use super::evaluation::{evaluate, Evaluation};
-use super::validate_word::validate_word;
+use super::validate_word::validate_word_format;
 use crate::constants::MAX_GUESSES;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
@@ -25,8 +25,8 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(solution: String, word_list: &HashSet<String>) -> Result<Self> {
-        validate_word(&solution, word_list)?;
+    pub fn new(solution: String) -> Result<Self> {
+        validate_word_format(&solution)?;
         Ok(Self {
             solution,
             history: vec![],
@@ -69,7 +69,7 @@ mod tests {
     fn test_win() {
         let word = String::from("tales");
         let word_list = HashSet::from_iter(std::iter::once(word.clone()));
-        let mut game = Game::new(word.clone(), &word_list).unwrap();
+        let mut game = Game::new(word.clone()).unwrap();
         game.guess(word.clone(), &word_list).unwrap();
         assert_eq!(game.state, GameState::Won);
         assert!(game.guess(word.clone(), &word_list).is_err());
