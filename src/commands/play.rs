@@ -116,7 +116,12 @@ async fn game_loop_logic(
     while let Some(msg) = user.await_reply(&ctx).await {
         match {
             let mut lock = player_state.lock().unwrap();
-            let game = lock.games_per_player.get_mut(&user.id.0).unwrap();
+            let game = lock.games_per_player.get_mut(&user.id.0);
+            if game.is_none() {
+                eprintln!("Game is none. This should not happen last seen msg: {msg:?}");
+                return Ok(());
+            }
+            let game = game.unwrap();
             let guess = msg.content.to_ascii_lowercase();
             match validate_word(&guess, &word_list.words, game.solution()) {
                 Ok(_) => {
@@ -180,6 +185,10 @@ async fn game_loop_logic(
                 }
 
                 msg.channel_id.say(&ctx, message_builder.build()).await?;
+
+                if game_state != GameState::InProgress {
+                    return Ok(());
+                }
             }
         }
     }
