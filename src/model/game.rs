@@ -34,6 +34,10 @@ impl Game {
         })
     }
 
+    pub fn solution(&self) -> &str {
+        &self.solution
+    }
+
     pub fn history(&self) -> &[Guess] {
         &self.history
     }
