@@ -2,6 +2,7 @@ mod commands;
 mod constants;
 mod model;
 mod player;
+mod util;
 mod wordlist;
 
 use crate::model::validate_word::validate_word_format;

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serenity::prelude::{RwLock, TypeMapKey};
+use serenity::prelude::TypeMapKey;
 use std::collections::HashSet;
 use std::sync::Arc;
 

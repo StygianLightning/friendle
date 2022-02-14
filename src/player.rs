@@ -6,7 +6,7 @@ use crate::model::game::Game;
 
 #[derive(Debug, Default)]
 pub struct PlayerState {
-    pub games_per_player: HashMap<String, Game>,
+    pub games_per_player: HashMap<u64, Game>,
 }
 
 impl TypeMapKey for PlayerState {
