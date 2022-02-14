@@ -1,9 +1,11 @@
 mod commands;
 mod constants;
 mod model;
+mod player;
 mod wordlist;
 
 use crate::model::validate_word::validate_word_format;
+use crate::player::PlayerState;
 use crate::wordlist::WordList;
 use commands::encode::*;
 use commands::help::*;
@@ -39,13 +41,13 @@ pub const DISCORD_TOKEN: &str = "FRIENDLE_DISCORD_TOKEN";
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
-    let dict_path = std::env::var(WORD_LIST_PATH_ENV_VAR)
+    let word_list_path = std::env::var(WORD_LIST_PATH_ENV_VAR)
         .unwrap_or_else(|_| String::from("resources/wordlist.txt"));
-    println!("word list path env var: {}", dict_path);
+    println!("word list path env var: {}", word_list_path);
 
-    let dict_path = PathBuf::from(dict_path);
+    let word_list_path = PathBuf::from(word_list_path);
 
-    let words_string = std::fs::read_to_string(&dict_path).expect("Failed to load word list");
+    let words_string = std::fs::read_to_string(&word_list_path).expect("Failed to load word list");
     let word_lines = words_string.lines();
     let mut words: HashSet<String> = HashSet::new();
     for word in word_lines {
@@ -73,10 +75,15 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .expect("Error creating client");
 
-    let dict = Arc::new(RwLock::new(word_list));
+    let word_list = Arc::new(RwLock::new(word_list));
     {
         let mut data = client.data.write().await;
-        data.insert::<WordList>(Arc::clone(&dict));
+        data.insert::<WordList>(Arc::clone(&word_list));
+    }
+    let state_per_player = Arc::new(RwLock::new(PlayerState::default()));
+    {
+        let mut data = client.data.write().await;
+        data.insert::<PlayerState>(Arc::clone(&state_per_player));
     }
 
     if let Err(why) = client.start().await {
