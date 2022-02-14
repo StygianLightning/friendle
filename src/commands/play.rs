@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use serenity::utils::MessageBuilder;
 use std::sync::Arc;
 
 use serenity::client::Context;
@@ -97,12 +98,14 @@ async fn game_loop_logic(
             }
             Ok(_) => {
                 game.guess(String::from(guess), &word_list.words)?;
-                let status_report = "";
 
-                user.direct_message(&ctx, |m| {
-                    m.content("game finished early because of internal problems")
-                })
-                .await?;
+                let mut message_builder = MessageBuilder::new();
+
+                for guess in game.history() {
+                    message_builder.push_line_safe(format!(""));
+                }
+
+                msg.channel_id.say(&ctx, message_builder.build()).await?;
                 if matches!(game.state(), GameState::Won | GameState::Lost) {
                     return Ok(());
                 }
