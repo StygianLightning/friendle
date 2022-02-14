@@ -11,8 +11,8 @@ use crate::wordlist::WordList;
 use commands::encode::*;
 use commands::help::*;
 use commands::play::*;
-use serenity::prelude::RwLock;
 use std::collections::HashSet;
+use std::sync::Mutex;
 
 use serenity::async_trait;
 use serenity::client::{Client, Context, EventHandler};
@@ -79,7 +79,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     {
         let mut data = client.data.write().await;
         data.insert::<WordList>(Arc::new(word_list));
-        data.insert::<PlayerState>(Arc::new(RwLock::new(PlayerState::default())));
+        data.insert::<PlayerState>(Arc::new(Mutex::new(PlayerState::default())));
     }
 
     if let Err(why) = client.start().await {

@@ -1,4 +1,5 @@
-use serenity::prelude::{RwLock, TypeMapKey};
+use serenity::prelude::TypeMapKey;
+use std::sync::Mutex;
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -10,5 +11,5 @@ pub struct PlayerState {
 }
 
 impl TypeMapKey for PlayerState {
-    type Value = Arc<RwLock<PlayerState>>;
+    type Value = Arc<Mutex<PlayerState>>;
 }

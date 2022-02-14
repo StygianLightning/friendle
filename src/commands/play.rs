@@ -13,9 +13,38 @@ use serenity::client::Context;
 use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
 use serenity::model::prelude::User;
-use serenity::prelude::RwLock;
 use serenity::utils::MessageBuilder;
-use std::sync::Arc;
+use std::collections::hash_map::Entry;
+use std::sync::{Arc, Mutex};
+
+enum GameCreationState {
+    AlreadyInProgress,
+    SuccessfullyCreated,
+    ErrorDuringCreation,
+}
+
+fn construct_game_opt_result(
+    player_state: &Arc<Mutex<PlayerState>>,
+    player_id: u64,
+    solution: String,
+) -> GameCreationState {
+    let mut lock = player_state.lock().unwrap();
+    let entry = lock.games_per_player.entry(player_id);
+    if matches!(entry, Entry::Occupied(_)) {
+        return GameCreationState::AlreadyInProgress;
+    }
+
+    match Game::new(solution) {
+        Ok(game) => {
+            entry.or_insert(game);
+            GameCreationState::SuccessfullyCreated
+        }
+        Err(err) => {
+            eprintln!("Error during game creation: {err}");
+            GameCreationState::ErrorDuringCreation
+        }
+    }
+}
 
 #[command]
 #[description = "Play a round of Wordle."]
@@ -29,41 +58,34 @@ pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
                     let data = ctx.data.read().await;
                     let word_list = data.get::<WordList>().unwrap();
                     let player_state = data.get::<PlayerState>().unwrap();
-                    let mut guard = player_state.write().await;
-                    let entry = guard.games_per_player.entry(player_id);
-                    if matches!(entry, std::collections::hash_map::Entry::Occupied(_)) {
-                        msg.reply(ctx, "Game already in progress").await?;
-                    } else {
-                        match Game::new(word) {
-                            Err(e) => {
-                                eprintln!("{e}");
-                                msg.reply(ctx, "encountered an internal problem").await?;
-                            }
-                            Ok(game) => {
-                                entry.or_insert(game);
-                                drop(guard);
-                                tokio::spawn(game_loop(
-                                    ctx.clone(),
-                                    Code { value: code },
-                                    Arc::clone(word_list),
-                                    Arc::clone(player_state),
-                                    msg.author.clone(),
-                                ));
-                            }
+                    let game_creation_state =
+                        construct_game_opt_result(player_state, player_id, word);
+
+                    match game_creation_state {
+                        GameCreationState::AlreadyInProgress => {
+                            msg.reply(ctx, "Game aleady in progress!").await?;
+                        }
+                        GameCreationState::ErrorDuringCreation => {
+                            msg.reply(ctx, format!("Encountered an internal error."))
+                                .await?;
+                        }
+                        GameCreationState::SuccessfullyCreated => {
+                            tokio::spawn(game_loop(
+                                ctx.clone(),
+                                Code { value: code },
+                                Arc::clone(word_list),
+                                Arc::clone(player_state),
+                                msg.author.clone(),
+                            ));
                         }
                     }
-                } else {
-                    msg.reply(ctx, format!("Invalid code: {code}")).await?;
                 }
             }
             Err(_) => {
                 msg.reply(ctx, format!("Invalid code: {code}")).await?;
             }
         }
-    } else {
-        msg.reply(ctx, "Expected a code.").await?;
     }
-
     Ok(())
 }
 
@@ -71,7 +93,7 @@ async fn game_loop(
     ctx: Context,
     code: Code,
     word_list: Arc<WordList>,
-    player_state: Arc<RwLock<PlayerState>>,
+    player_state: Arc<Mutex<PlayerState>>,
     user: User,
 ) {
     if let Err(e) = game_loop_logic(ctx, code, word_list, player_state, user).await {
@@ -83,7 +105,7 @@ async fn game_loop_logic(
     ctx: Context,
     code: Code,
     word_list: Arc<WordList>,
-    player_state: Arc<RwLock<PlayerState>>,
+    player_state: Arc<Mutex<PlayerState>>,
     user: User,
 ) -> Result<()> {
     user.direct_message(&ctx, |m| {
@@ -92,17 +114,29 @@ async fn game_loop_logic(
     .await?;
 
     while let Some(msg) = user.await_reply(&ctx).await {
-        let mut guard = player_state.write().await;
-        let game = guard.games_per_player.get_mut(&user.id.0).unwrap();
-        let guess = msg.content.to_ascii_lowercase();
-        match validate_word(&guess, &word_list.words, game.solution()) {
+        match {
+            let mut lock = player_state.lock().unwrap();
+            let game = lock.games_per_player.get_mut(&user.id.0).unwrap();
+            let guess = msg.content.to_ascii_lowercase();
+            match validate_word(&guess, &word_list.words, game.solution()) {
+                Ok(_) => {
+                    game.guess(guess, &word_list.words)?;
+                    let game = game.clone();
+                    if game.state() != GameState::InProgress {
+                        // game evaluation is done and the game has been completed -- remove the lock so the player can start the next game
+                        // This can be done asyncrhonously while
+                        lock.games_per_player.remove(&user.id.0);
+                    }
+                    Ok(game)
+                }
+                Err(e) => Err(e),
+            }
+        } {
             Err(e) => {
                 eprintln!("error {e}");
-                drop(guard);
                 msg.reply(&ctx, "invalid word!").await?;
             }
-            Ok(_) => {
-                game.guess(guess, &word_list.words)?;
+            Ok(game) => {
                 let game_state = game.state();
 
                 let mut message_builder = MessageBuilder::new();
@@ -146,10 +180,6 @@ async fn game_loop_logic(
                 }
 
                 msg.channel_id.say(&ctx, message_builder.build()).await?;
-                if game_state != GameState::InProgress {
-                    guard.games_per_player.remove(&user.id.0);
-                    return Ok(());
-                }
             }
         }
     }

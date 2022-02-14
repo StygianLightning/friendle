@@ -4,7 +4,7 @@ use crate::constants::MAX_GUESSES;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Guess {
     pub word: String,
     pub evaluation: Vec<Evaluation>,
@@ -17,7 +17,7 @@ pub enum GameState {
     Lost,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Game {
     solution: String,
     state: GameState,
