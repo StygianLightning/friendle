@@ -3,6 +3,7 @@ use serenity::model::guild::Emoji;
 use serenity::utils::{ArgumentConvert, MessageBuilder};
 use std::sync::Arc;
 
+use crate::constants;
 use crate::model::evaluation::get_emoji;
 use crate::util::get_regional_indicator;
 use serenity::client::Context;
@@ -45,6 +46,7 @@ pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
                                 drop(guard);
                                 tokio::spawn(game_loop(
                                     ctx.clone(),
+                                    Code { value: code },
                                     Arc::clone(&word_list),
                                     Arc::clone(&player_state),
                                     msg.author.clone(),
@@ -69,17 +71,19 @@ pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
 
 async fn game_loop(
     ctx: Context,
+    code: Code,
     word_list: Arc<WordList>,
     player_state: Arc<RwLock<PlayerState>>,
     user: User,
 ) {
-    if let Err(e) = game_loop_logic(ctx, word_list, player_state, user).await {
+    if let Err(e) = game_loop_logic(ctx, code, word_list, player_state, user).await {
         eprintln!("encountered error in game loop: {e}");
     }
 }
 
 async fn game_loop_logic(
     ctx: Context,
+    code: Code,
     word_list: Arc<WordList>,
     player_state: Arc<RwLock<PlayerState>>,
     user: User,
@@ -101,18 +105,36 @@ async fn game_loop_logic(
             }
             Ok(_) => {
                 game.guess(String::from(guess), &word_list.words)?;
+                let game_state = game.state();
 
                 let mut message_builder = MessageBuilder::new();
 
+                let line = match game_state {
+                    GameState::Lost => format!("X/{}", constants::MAX_GUESSES),
+                    GameState::Won => {
+                        format!("{}/{}", game.history().len(), constants::MAX_GUESSES)
+                    }
+                    GameState::InProgress => format!(
+                        "{}/{} [in progress]",
+                        game.history().len(),
+                        crate::constants::MAX_GUESSES
+                    ),
+                };
+
+                let code = code.value;
+                message_builder.push_line(format!("Friendle {code} {line}"));
+
                 for guess in game.history() {
-                    // guessed word converted to emojis
-                    message_builder.push_line(String::from_iter(
-                        guess
-                            .word
-                            .chars()
-                            // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
-                            .map(|c| format!("{}\u{200c}", get_regional_indicator(c))),
-                    ));
+                    if game_state == GameState::InProgress {
+                        // guessed word converted to emojis
+                        message_builder.push_line(String::from_iter(
+                            guess
+                                .word
+                                .chars()
+                                // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
+                                .map(|c| format!("{}\u{200c}", get_regional_indicator(c))),
+                        ));
+                    }
                     // evaluation converted to emojis
                     message_builder.push_line_safe(String::from_iter(
                         guess
@@ -120,10 +142,13 @@ async fn game_loop_logic(
                             .iter()
                             .map(|eval| format!("{}", get_emoji(*eval))),
                     ));
+                    if game_state == GameState::InProgress {
+                        message_builder.push_line_safe("");
+                    }
                 }
 
                 msg.channel_id.say(&ctx, message_builder.build()).await?;
-                if matches!(game.state(), GameState::Won | GameState::Lost) {
+                if game_state != GameState::InProgress {
                     guard.games_per_player.remove(&user.id.0);
                     return Ok(());
                 }
