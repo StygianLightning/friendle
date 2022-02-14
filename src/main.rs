@@ -75,15 +75,10 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .expect("Error creating client");
 
-    let word_list = Arc::new(RwLock::new(word_list));
     {
         let mut data = client.data.write().await;
-        data.insert::<WordList>(Arc::clone(&word_list));
-    }
-    let state_per_player = Arc::new(RwLock::new(PlayerState::default()));
-    {
-        let mut data = client.data.write().await;
-        data.insert::<PlayerState>(Arc::clone(&state_per_player));
+        data.insert::<WordList>(Arc::new(word_list));
+        data.insert::<PlayerState>(Arc::new(RwLock::new(PlayerState::default())));
     }
 
     if let Err(why) = client.start().await {

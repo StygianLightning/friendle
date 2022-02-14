@@ -9,5 +9,5 @@ pub struct WordList {
 }
 
 impl TypeMapKey for WordList {
-    type Value = Arc<RwLock<WordList>>;
+    type Value = Arc<WordList>;
 }
