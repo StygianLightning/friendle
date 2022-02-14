@@ -1,23 +1,21 @@
-use anyhow::{bail, Result};
-use serenity::model::guild::Emoji;
-use serenity::utils::{ArgumentConvert, MessageBuilder};
-use std::sync::Arc;
-
 use crate::constants;
+use crate::model::coding::{decode, Code};
 use crate::model::evaluation::get_emoji;
+use crate::model::game::{Game, GameState};
+use crate::model::validate_word::validate_word;
+use crate::player::PlayerState;
+use crate::util::extract_second_word;
 use crate::util::get_regional_indicator;
+use crate::wordlist::WordList;
+
+use anyhow::Result;
 use serenity::client::Context;
 use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
 use serenity::model::prelude::User;
 use serenity::prelude::RwLock;
-
-use crate::model::coding::{decode, Code};
-use crate::model::game::{Game, GameState};
-use crate::model::validate_word::validate_word;
-use crate::player::PlayerState;
-use crate::util::extract_second_word;
-use crate::wordlist::WordList;
+use serenity::utils::MessageBuilder;
+use std::sync::Arc;
 
 #[command]
 #[description = "Play a round of Wordle."]
