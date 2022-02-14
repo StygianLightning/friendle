@@ -124,6 +124,7 @@ async fn game_loop_logic(
 
                 msg.channel_id.say(&ctx, message_builder.build()).await?;
                 if matches!(game.state(), GameState::Won | GameState::Lost) {
+                    guard.games_per_player.remove(&user.id.0);
                     return Ok(());
                 }
             }
