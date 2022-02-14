@@ -1,7 +1,10 @@
 use anyhow::{bail, Result};
-use serenity::utils::MessageBuilder;
+use serenity::model::guild::Emoji;
+use serenity::utils::{ArgumentConvert, MessageBuilder};
 use std::sync::Arc;
 
+use crate::model::evaluation::get_emoji;
+use crate::util::get_regional_indicator;
 use serenity::client::Context;
 use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
@@ -102,7 +105,21 @@ async fn game_loop_logic(
                 let mut message_builder = MessageBuilder::new();
 
                 for guess in game.history() {
-                    message_builder.push_line_safe(format!(""));
+                    // guessed word converted to emojis
+                    message_builder.push_line(String::from_iter(
+                        guess
+                            .word
+                            .chars()
+                            // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
+                            .map(|c| format!("{}\u{200c}", get_regional_indicator(c))),
+                    ));
+                    // evaluation converted to emojis
+                    message_builder.push_line_safe(String::from_iter(
+                        guess
+                            .evaluation
+                            .iter()
+                            .map(|eval| format!("{}", get_emoji(*eval))),
+                    ));
                 }
 
                 msg.channel_id.say(&ctx, message_builder.build()).await?;

@@ -9,6 +9,12 @@ pub enum Evaluation {
     Correct,
 }
 
+const EVALUATION_EMOTES: &[char] = &['⬛', '🟨', '🟩'];
+
+pub fn get_emoji(evaluation: Evaluation) -> char {
+    EVALUATION_EMOTES[evaluation as usize]
+}
+
 pub fn evaluate(
     guess: &str,
     solution: &str,
@@ -101,5 +107,12 @@ mod tests {
         let mut frequencies_vec = freq.into_iter().collect::<Vec<_>>();
         frequencies_vec.sort_by(|(a, _), (b, _)| a.cmp(b));
         assert_eq!(frequencies_vec, vec![('a', 2usize), ('b', 2), ('c', 1)]);
+    }
+
+    #[test]
+    fn test_evaluation_emoji() {
+        assert_eq!(get_emoji(Evaluation::Absent), '⬛');
+        assert_eq!(get_emoji(Evaluation::Present), '🟨');
+        assert_eq!(get_emoji(Evaluation::Correct), '🟩');
     }
 }
