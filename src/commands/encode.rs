@@ -15,7 +15,7 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
                     .await?;
             }
             Ok(_) => {
-                let code = crate::model::deencoding::encode(word);
+                let code = crate::model::coding::encode(word);
                 let value = code.value;
                 msg.reply(
                     ctx,

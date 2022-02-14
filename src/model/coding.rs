@@ -13,12 +13,14 @@ pub fn encode(word: &str) -> Code {
         factor *= MULTIPLIER;
     }
 
+    value = value.rotate_right(value.count_ones()); // Violet's algorithm
+
     Code { value }
 }
 
 pub fn decode(code: Code) -> Option<String> {
     let mut s = String::new();
-    let mut value = code.value;
+    let mut value = code.value.rotate_left(code.value.count_ones());
     while value > 0 {
         let next_char = char::from_u32('a' as u32 + (value % MULTIPLIER - 1))?;
         value /= MULTIPLIER;
