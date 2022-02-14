@@ -45,8 +45,8 @@ pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
                                 tokio::spawn(game_loop(
                                     ctx.clone(),
                                     Code { value: code },
-                                    Arc::clone(&word_list),
-                                    Arc::clone(&player_state),
+                                    Arc::clone(word_list),
+                                    Arc::clone(player_state),
                                     msg.author.clone(),
                                 ));
                             }
@@ -102,7 +102,7 @@ async fn game_loop_logic(
                 msg.reply(&ctx, "invalid word!").await?;
             }
             Ok(_) => {
-                game.guess(String::from(guess), &word_list.words)?;
+                game.guess(guess, &word_list.words)?;
                 let game_state = game.state();
 
                 let mut message_builder = MessageBuilder::new();
