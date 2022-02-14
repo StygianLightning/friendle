@@ -8,7 +8,7 @@ pub struct Code {
 pub fn encode(word: &str) -> Code {
     let mut value = 0;
     let mut factor = 1;
-    for c in word.chars() {
+    for c in word.to_lowercase().chars() {
         value += factor * encode_letter(c);
         factor *= MULTIPLIER;
     }
@@ -45,5 +45,11 @@ mod test {
         assert_eq!(&decode(encode(word)).unwrap(), word);
         let word = "hello";
         assert_eq!(&decode(encode(word)).unwrap(), word);
+    }
+
+    #[test]
+    fn encode_uppercase_ends_up_lowercase() {
+        let word = "TALES";
+        assert_eq!(&decode(encode(word)).unwrap(), "tales");
     }
 }
