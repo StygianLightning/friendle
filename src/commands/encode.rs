@@ -11,8 +11,11 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
     if let Some(word) = extract_second_word(&msg.content) {
         match validate_word_format(word) {
             Err(_) => {
-                msg.reply(ctx, format!("Invalid word format: {word}. Only five-letter alphanumeric words are supported."))
-                    .await?;
+                msg.reply(
+                    ctx,
+                    format!("Invalid word format: {word}. Only five-letter words with letters a-z are supported."),
+                )
+                .await?;
             }
             Ok(_) => {
                 let code = crate::model::coding::encode(word);

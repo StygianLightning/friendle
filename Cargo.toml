@@ -8,7 +8,7 @@ edition = "2021"
 linker = "arm-none-linux-gnueabihf-gcc"
 
 [dependencies]
-serenity = { version = "0.10", features = [ "client", "framework", "standard_framework", "utils", "collector" ] }
+serenity = { version = "0.10", features = [ "client", "framework", "standard_framework", "utils" ] }
 tokio = { version = "1.0", features = ["macros", "time", "rt-multi-thread"] }
 anyhow = "1.0"
 futures = "0.3"

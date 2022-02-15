@@ -1,3 +1,4 @@
+use super::coding::Code;
 use super::evaluation::{evaluate, Evaluation};
 use super::validate_word::validate_word_format;
 use crate::constants::MAX_GUESSES;
@@ -19,19 +20,25 @@ pub enum GameState {
 
 #[derive(Debug, Clone)]
 pub struct Game {
+    code: Code,
     solution: String,
     state: GameState,
     history: Vec<Guess>,
 }
 
 impl Game {
-    pub fn new(solution: String) -> Result<Self> {
+    pub fn new(code: Code, solution: String) -> Result<Self> {
         validate_word_format(&solution)?;
         Ok(Self {
+            code,
             solution,
             history: vec![],
             state: GameState::InProgress,
         })
+    }
+
+    pub fn code(&self) -> Code {
+        self.code
     }
 
     pub fn solution(&self) -> &str {

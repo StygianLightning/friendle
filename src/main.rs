@@ -1,10 +1,12 @@
 mod commands;
 mod constants;
+mod game_loop_hook;
 mod model;
 mod player;
 mod util;
 mod wordlist;
 
+use crate::game_loop_hook::message_hook;
 use crate::model::validate_word::validate_word_format;
 use crate::player::PlayerState;
 use crate::wordlist::WordList;
@@ -66,6 +68,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("."))
         .help(&MY_HELP)
+        .normal_message(message_hook)
         .group(&GENERAL_GROUP);
 
     // Login with a bot token from the environment
