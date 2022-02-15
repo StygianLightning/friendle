@@ -9,7 +9,7 @@ pub enum Evaluation {
     Correct,
 }
 
-const EVALUATION_EMOTES: &[char] = &['⬛', '🟨', '🟩'];
+const EVALUATION_EMOTES: &[char] = &['🟥', '🟨', '🟩'];
 
 pub fn get_emoji(evaluation: Evaluation) -> char {
     EVALUATION_EMOTES[evaluation as usize]
