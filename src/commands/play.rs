@@ -146,20 +146,32 @@ async fn game_loop_logic(
 
                 let mut message_builder = MessageBuilder::new();
 
-                let line = match game_state {
-                    GameState::Lost => format!("X/{}", constants::MAX_GUESSES),
-                    GameState::Won => {
-                        format!("{}/{}", game.history().len(), constants::MAX_GUESSES)
-                    }
-                    GameState::InProgress => format!(
-                        "{}/{} [in progress]",
-                        game.history().len(),
-                        crate::constants::MAX_GUESSES
-                    ),
-                };
-
                 let code = code.value;
-                message_builder.push_line(format!("Friendle {code} {line}"));
+                match game_state {
+                    GameState::Lost => {
+                        let solution = game.solution();
+                        msg.reply(
+                            &ctx,
+                            format!("Unfortunately, you're out of tries. The solution was ||`{solution}`||"),
+                        )
+                        .await?;
+                        let line = format!("X/{}", constants::MAX_GUESSES);
+                        message_builder.push_line(format!("Friendle `{code}`: {line}"));
+                    }
+                    GameState::Won => {
+                        msg.reply(&ctx, format!("You won! Good job :)")).await?;
+                        let line = format!("{}/{}", game.history().len(), constants::MAX_GUESSES);
+                        message_builder.push_line(format!("Friendle `{code}`: {line}"));
+                    }
+                    GameState::InProgress => {
+                        message_builder.push_line(format!("Friendle `{code}`"));
+                        message_builder.push_line(format!(
+                            "{}/{} [in progress]",
+                            game.history().len(),
+                            crate::constants::MAX_GUESSES
+                        ));
+                    }
+                }
 
                 for guess in game.history() {
                     if game_state == GameState::InProgress {
