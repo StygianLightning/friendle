@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Stygeon <denrellum@gmail.com>"]
 edition = "2021"
 
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-none-linux-gnueabihf-gcc"
+
 [dependencies]
 serenity = { version = "0.10", features = [ "client", "framework", "standard_framework", "utils", "collector" ] }
 tokio = { version = "1.0", features = ["macros", "time", "rt-multi-thread"] }
