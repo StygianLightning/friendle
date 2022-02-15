@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_evaluation_emoji() {
-        assert_eq!(get_emoji(Evaluation::Absent), '⬛');
+        assert_eq!(get_emoji(Evaluation::Absent), '🟥');
         assert_eq!(get_emoji(Evaluation::Present), '🟨');
         assert_eq!(get_emoji(Evaluation::Correct), '🟩');
     }

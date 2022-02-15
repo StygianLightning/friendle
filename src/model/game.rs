@@ -80,7 +80,7 @@ mod tests {
     fn test_win() {
         let word = String::from("tales");
         let word_list = HashSet::from_iter(std::iter::once(word.clone()));
-        let mut game = Game::new(word.clone()).unwrap();
+        let mut game = Game::new(Code { value: 1234 }, word.clone()).unwrap(); // not the real code, but it doesn't matter here since it's only used for reporting
         game.guess(word.clone(), &word_list).unwrap();
         assert_eq!(game.state, GameState::Won);
         assert!(game.guess(word.clone(), &word_list).is_err());
