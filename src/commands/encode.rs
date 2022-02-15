@@ -19,9 +19,10 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
                 let value = code.value;
                 msg.reply(
                     ctx,
-                    format!("To play a game of Wordle with your secret word, use `.play {value}`"),
+                    "To play a game of Wordle with your secret word, use the following command:",
                 )
                 .await?;
+                msg.reply(ctx, format!("`.play {value}`")).await?;
             }
         }
     } else {
