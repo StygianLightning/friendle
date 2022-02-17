@@ -1,18 +1,13 @@
-
 use crate::model::coding::{decode, Code};
 
-use crate::model::game::{Game};
+use crate::model::game::Game;
 
 use crate::player::PlayerState;
 use crate::util::extract_second_word;
 
-
-
-
 use serenity::client::Context;
 use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
-
 
 use std::collections::hash_map::Entry;
 use std::sync::{Arc, Mutex};

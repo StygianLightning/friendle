@@ -1,11 +1,14 @@
 use crate::constants;
-use crate::model::evaluation::get_emoji;
+
+use crate::buttons::show_keyboard_button::ShowKeyboardButton;
 use crate::model::game::GameState;
 use crate::player::PlayerState;
-use crate::util::get_regional_indicator;
+
 use crate::wordlist::WordList;
+
 use serenity::framework::standard::macros::hook;
 use serenity::model::channel::Message;
+
 use serenity::prelude::Context;
 use serenity::utils::MessageBuilder;
 
@@ -60,6 +63,7 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
     match game_state {
         GameState::Lost => {
             let solution = game.solution();
+            // TODO add extra loss messages and select one at random for fun
             msg.reply(
                 &ctx,
                 format!("Unfortunately, you're out of tries. The solution was ||`{solution}`||"),
@@ -69,6 +73,7 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
             message_builder.push_line(format!("Friendle `{code}`: {line}"));
         }
         GameState::Won => {
+            // TODO add extra win messages and select one at random for fun
             msg.reply(&ctx, format!("You won! Good job :)")).await?;
             let line = format!("{}/{}", game.history().len(), constants::MAX_GUESSES);
             message_builder.push_line(format!("Friendle `{code}`: {line}"));
@@ -83,30 +88,20 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
         }
     }
 
-    for guess in game.history() {
-        if game_state == GameState::InProgress {
-            // guessed word converted to emojis
-            message_builder.push_line(String::from_iter(
-                guess
-                    .word
-                    .chars()
-                    // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
-                    .map(|c| format!("{}\u{200c}", get_regional_indicator(c))),
-            ));
-        }
-        // evaluation converted to emojis
-        message_builder.push_line_safe(String::from_iter(
-            guess
-                .evaluation
-                .iter()
-                .map(|eval| format!("{}", get_emoji(*eval))),
-        ));
-        if game_state == GameState::InProgress {
-            message_builder.push_line_safe("");
-        }
-    }
+    game.display_state(&mut message_builder);
 
-    msg.channel_id.say(&ctx, message_builder.build()).await?;
+    msg.channel_id
+        .send_message(&ctx, |m| {
+            m.content(message_builder);
+            if game_state == GameState::InProgress {
+                m.components(|comps| {
+                    comps.create_action_row(|row| row.add_button(ShowKeyboardButton::button()));
+                    comps
+                });
+            }
+            m
+        })
+        .await?;
 
     {
         // get the game state again and update it -- either write the new game state if it's still in progress or remove it if it's finished

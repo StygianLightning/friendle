@@ -1,49 +1,48 @@
+mod buttons;
 mod commands;
 mod constants;
+mod event_handler;
 mod game_loop_hook;
 mod model;
 mod player;
 mod util;
 mod wordlist;
 
-use crate::game_loop_hook::message_hook;
-use crate::model::validate_word::validate_word_format;
-use crate::player::PlayerState;
-use crate::wordlist::WordList;
 use commands::encode::*;
 use commands::help::*;
 use commands::play::*;
-use std::collections::HashSet;
-use std::sync::Mutex;
+use event_handler::Handler;
+use game_loop_hook::message_hook;
+use model::validate_word::validate_word_format;
+use player::PlayerState;
+use wordlist::WordList;
 
-use serenity::async_trait;
-use serenity::client::{Client, Context, EventHandler};
+use serenity::client::Client;
 use serenity::framework::standard::{macros::group, StandardFramework};
-use serenity::model::gateway::Ready;
 
+use std::collections::HashSet;
 use std::env;
 use std::error::Error;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 #[group]
 #[commands(encode, play)]
 struct General;
 
-struct Handler;
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
-    }
-}
-
 pub const WORD_LIST_PATH_ENV_VAR: &str = "WORD_LIST_PATH";
 pub const DISCORD_TOKEN: &str = "FRIENDLE_DISCORD_TOKEN";
+pub const DISCORD_APPLICATION_ID: &str = "FRIENDLE_APPLICATION_ID";
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn Error>> {
+    // The Application Id is usually the Bot User Id. It is needed for components
+    let application_id: u64 = env::var(DISCORD_APPLICATION_ID)
+        .expect(&format!("{DISCORD_APPLICATION_ID} not set"))
+        .parse()
+        .expect("application id is not a valid id");
+
     let word_list_path = std::env::var(WORD_LIST_PATH_ENV_VAR)
         .unwrap_or_else(|_| String::from("resources/wordlist.txt"));
     println!("word list path env var: {}", word_list_path);
@@ -76,6 +75,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let mut client = Client::builder(token)
         .event_handler(Handler)
         .framework(framework)
+        .application_id(application_id)
         .await
         .expect("Error creating client");
 

@@ -1,7 +1,8 @@
 use super::coding::Code;
-use super::evaluation::{evaluate, Evaluation};
+use super::evaluation::{evaluate, get_emoji, Evaluation};
 use super::validate_word::validate_word_format;
 use crate::constants::MAX_GUESSES;
+use crate::util::get_regional_indicator;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
 
@@ -28,6 +29,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(code: Code, solution: String) -> Result<Self> {
+        // TODO add word list and check if solution is in word list; if not, add a flag here and a warning to each in-progress state and the initial message!
         validate_word_format(&solution)?;
         Ok(Self {
             code,
@@ -69,6 +71,31 @@ impl Game {
             self.state = GameState::Lost;
         }
         Ok(())
+    }
+
+    pub fn display_state(&self, message_builder: &mut serenity::utils::MessageBuilder) {
+        for guess in &self.history {
+            if self.state == GameState::InProgress {
+                // guessed word converted to emojis
+                message_builder.push_line(String::from_iter(
+                    guess
+                        .word
+                        .chars()
+                        // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
+                        .map(|c| format!("{}\u{200c}", get_regional_indicator(c))),
+                ));
+            }
+            // evaluation converted to emojis
+            message_builder.push_line_safe(String::from_iter(
+                guess
+                    .evaluation
+                    .iter()
+                    .map(|eval| format!("{}", get_emoji(*eval))),
+            ));
+            if self.state == GameState::InProgress {
+                message_builder.push_line_safe("");
+            }
+        }
     }
 }
 

@@ -11,6 +11,8 @@ pub fn get_regional_indicator(letter: char) -> char {
     REGIONAL_INDICATORS[(letter.to_ascii_lowercase() as u32 - 'a' as u32) as usize]
 }
 
+pub const KEYBOARD_LAYOUT: &[&str] = &[&"QWERTYUIOP", &"asdfghjkl", &"zxcvbnm"];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -29,5 +31,14 @@ mod tests {
     fn test_regional_indicators() {
         assert_eq!(get_regional_indicator('a'), '🇦');
         assert_eq!(get_regional_indicator('z'), '🇿');
+    }
+
+    #[test]
+    fn test_all_letters_present_in_layout() {
+        let len = KEYBOARD_LAYOUT
+            .iter()
+            .map(|s| s.len())
+            .fold(0, |a, b| a + b);
+        assert_eq!(len, 26);
     }
 }
