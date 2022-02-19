@@ -8,7 +8,11 @@ use std::{
 
 use serenity::{
     client::Context,
-    model::{interactions::message_component::MessageComponentInteractionData, prelude::User},
+    model::{
+        interactions::{
+            message_component::{MessageComponentInteraction},
+        },
+    },
 };
 
 use show_keyboard_button::ShowKeyboardButton;
@@ -41,16 +45,13 @@ impl FromStr for FriendleButton {
 }
 
 impl FriendleButton {
-    pub async fn handle_interaction(
-        self,
-        ctx: &Context,
-        user: &User,
-        data: &MessageComponentInteractionData,
-    ) {
-        match self {
+    pub async fn handle_interaction(self, ctx: &Context, mci: &MessageComponentInteraction) {
+        if let Err(e) = match self {
             FriendleButton::ShowKeyboard(_) => {
-                ShowKeyboardButton::handle_interaction(ctx, user, data).await
+                ShowKeyboardButton::handle_interaction(ctx, mci).await
             }
+        } {
+            eprintln!("Error during button interaction: {e}");
         }
     }
 }

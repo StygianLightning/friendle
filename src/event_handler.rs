@@ -5,7 +5,7 @@ use serenity::client::{Context, EventHandler};
 
 use serenity::model::gateway::Ready;
 use serenity::model::interactions::message_component::ComponentType;
-use serenity::model::interactions::message_component::MessageComponentInteraction;
+
 
 use serenity::model::interactions::Interaction;
 
@@ -21,22 +21,17 @@ impl EventHandler for Handler {
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         match interaction {
-            Interaction::MessageComponent(MessageComponentInteraction {
-                ref user,
-                ref message,
-                ref data,
-                ..
-            }) if data.component_type == ComponentType::Button => {
-                let custom_id = &data.custom_id;
+            Interaction::MessageComponent(ref mci)
+                if mci.data.component_type == ComponentType::Button =>
+            {
+                let custom_id = &mci.data.custom_id;
                 match FriendleButton::from_str(custom_id) {
                     Ok(button) => {
-                        button.handle_interaction(&ctx, user, &data).await;
+                        button.handle_interaction(&ctx, mci).await;
                     }
 
                     Err(err) => {
-                        eprintln!(
-                            "button {custom_id} pressed by {user} in reaction to msg {message:?} led to error {err}"
-                        );
+                        eprintln!("button interaction {mci:?} led to error {err}");
                         return;
                     }
                 }

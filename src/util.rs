@@ -7,8 +7,13 @@ const REGIONAL_INDICATORS: &[char] = &[
     '🇹', '🇺', '🇻', '🇼', '🇽', '🇾', '🇿',
 ];
 
-pub fn get_regional_indicator(letter: char) -> char {
+fn get_regional_indicator(letter: char) -> char {
     REGIONAL_INDICATORS[(letter.to_ascii_lowercase() as u32 - 'a' as u32) as usize]
+}
+
+pub fn get_regional_indicator_emoji_with_zero_width_space(c: char) -> String {
+    // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
+    format!("{}\u{200c}", get_regional_indicator(c))
 }
 
 pub const KEYBOARD_LAYOUT: &[&str] = &[&"QWERTYUIOP", &"asdfghjkl", &"zxcvbnm"];

@@ -2,7 +2,7 @@ use super::coding::Code;
 use super::evaluation::{evaluate, get_emoji, Evaluation};
 use super::validate_word::validate_word_format;
 use crate::constants::MAX_GUESSES;
-use crate::util::get_regional_indicator;
+use crate::util::get_regional_indicator_emoji_with_zero_width_space;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
 
@@ -62,6 +62,17 @@ impl From<Evaluation> for LetterState {
     }
 }
 
+impl LetterState {
+    pub fn to_evaluation(self) -> Option<Evaluation> {
+        match self {
+            LetterState::Unknown => None,
+            LetterState::Absent => Some(Evaluation::Absent),
+            LetterState::Present => Some(Evaluation::Present),
+            LetterState::Correct => Some(Evaluation::Correct),
+        }
+    }
+}
+
 impl Game {
     pub fn new(code: Code, solution: String) -> Result<Self> {
         // TODO add word list and check if solution is in word list; if not, add a flag here and a warning to each in-progress state and the initial message!
@@ -116,8 +127,7 @@ impl Game {
                     guess
                         .word
                         .chars()
-                        // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
-                        .map(|c| format!("{}\u{200c}", get_regional_indicator(c))),
+                        .map(get_regional_indicator_emoji_with_zero_width_space),
                 ));
             }
             // evaluation converted to emojis
