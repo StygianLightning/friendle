@@ -1,7 +1,7 @@
 use crate::constants;
 
 use crate::buttons::show_keyboard_button::ShowKeyboardButton;
-use crate::model::game::GameState;
+use crate::model::game::{GameFlag, GameState};
 use crate::player::PlayerState;
 
 use crate::wordlist::WordList;
@@ -80,11 +80,16 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
         }
         GameState::InProgress => {
             message_builder.push_line(format!("Friendle `{code}`"));
-            message_builder.push_line(format!(
+            message_builder.push(format!(
                 "{}/{} [in progress]",
                 game.history().len(),
                 crate::constants::MAX_GUESSES
             ));
+
+            if game.flags().contains(&GameFlag::SolutionNotInWordList) {
+                message_builder.push(" [not in word list]");
+            }
+            message_builder.push_line("");
         }
     }
 

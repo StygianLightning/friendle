@@ -5,6 +5,7 @@ use crate::constants::MAX_GUESSES;
 use crate::util::get_regional_indicator_emoji_with_zero_width_space;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct Guess {
@@ -36,9 +37,26 @@ pub enum GameState {
     Lost,
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum GameFlag {
+    SolutionNotInWordList,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct GameFlags(HashSet<GameFlag>);
+
+impl Deref for GameFlags {
+    type Target = HashSet<GameFlag>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Game {
     code: Code,
+    flags: GameFlags,
     solution: String,
     state: GameState,
     history: Vec<Guess>,
@@ -74,15 +92,26 @@ impl LetterState {
 }
 
 impl Game {
-    pub fn new(code: Code, solution: String) -> Result<Self> {
+    pub fn new(code: Code, solution: String, word_list: &HashSet<String>) -> Result<Self> {
         // TODO add word list and check if solution is in word list; if not, add a flag here and a warning to each in-progress state and the initial message!
         validate_word_format(&solution)?;
+        let mut flags = GameFlags::default();
+
+        if !word_list.contains(&solution) {
+            flags.0.insert(GameFlag::SolutionNotInWordList);
+        }
+
         Ok(Self {
             code,
             solution,
             history: vec![],
             state: GameState::InProgress,
+            flags,
         })
+    }
+
+    pub fn flags(&self) -> &GameFlags {
+        &self.flags
     }
 
     pub fn code(&self) -> Code {
@@ -160,14 +189,13 @@ mod tests {
     fn test_win() {
         let word = String::from("tales");
         let word_list = HashSet::from_iter(std::iter::once(word.clone()));
-        let mut game = Game::new(Code { value: 1234 }, word.clone()).unwrap(); // not the real code, but it doesn't matter here since it's only used for reporting
+        let mut game = Game::new(Code { value: 1234 }, word.clone(), &word_list).unwrap(); // not the real code, but it doesn't matter here since it's only used for reporting
         game.guess(word.clone(), &word_list).unwrap();
         assert_eq!(game.state, GameState::Won);
         assert!(game.guess(word.clone(), &word_list).is_err());
     }
 
     #[test]
-
     fn test_guess_get_letter_state() {
         let guess = Guess {
             word: String::from("abcbc"),
@@ -189,16 +217,18 @@ mod tests {
     #[test]
     fn test_game_get_letter_state() {
         let solution = String::from("tales");
-        let mut game = Game::new(Code { value: 1234 }, solution.clone()).unwrap();
 
         let mut word_list = HashSet::new();
         word_list.insert(String::from("earth"));
         word_list.insert(String::from("value"));
         word_list.insert(String::from("slime"));
 
+        let mut game = Game::new(Code { value: 1234 }, solution.clone(), &word_list).unwrap();
         for word in &word_list {
             game.guess(word.clone(), &word_list).unwrap();
         }
+
+        assert!(game.flags().contains(&GameFlag::SolutionNotInWordList));
 
         assert_eq!(LetterState::Present, game.get_letter_state('t'));
         assert_eq!(LetterState::Correct, game.get_letter_state('a'));
