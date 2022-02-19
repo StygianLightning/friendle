@@ -3,7 +3,10 @@ Description=friendle
 
 [Service]
 # Bot Discord token
-Environment=FRIENDLE_DISCORD_TOKEN=TOKEN_HERE
+Environment="FRIENDLE_DISCORD_TOKEN=TOKEN_HERE"
+Environment="WORD_LIST_PATH=PATH_TO_WORDLIST.TXT"
+Environment="FRIENDLE_APPLICATION_ID=APP_ID_HERE"
+
 # Bot path
 ExecStart=/usr/bin/bots/friendle
 User=styg
