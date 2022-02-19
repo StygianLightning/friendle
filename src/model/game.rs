@@ -12,6 +12,23 @@ pub struct Guess {
     pub evaluation: Vec<Evaluation>,
 }
 
+impl Guess {
+    pub fn get_letter_state(&self, letter: char) -> LetterState {
+        self.word
+            .chars()
+            .enumerate()
+            .filter_map(|(i, c)| {
+                if c == letter {
+                    Some(LetterState::from(self.evaluation[i]))
+                } else {
+                    None
+                }
+            })
+            .max()
+            .unwrap_or(LetterState::Unknown)
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum GameState {
     InProgress,
@@ -25,6 +42,24 @@ pub struct Game {
     solution: String,
     state: GameState,
     history: Vec<Guess>,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
+pub enum LetterState {
+    Unknown,
+    Absent,
+    Present,
+    Correct,
+}
+
+impl From<Evaluation> for LetterState {
+    fn from(eval: Evaluation) -> Self {
+        match eval {
+            Evaluation::Absent => LetterState::Absent,
+            Evaluation::Present => LetterState::Present,
+            Evaluation::Correct => LetterState::Correct,
+        }
+    }
 }
 
 impl Game {
@@ -97,6 +132,14 @@ impl Game {
             }
         }
     }
+
+    pub fn get_letter_state(&self, letter: char) -> LetterState {
+        self.history
+            .iter()
+            .map(|guess| guess.get_letter_state(letter))
+            .max()
+            .unwrap_or(LetterState::Unknown)
+    }
 }
 
 #[cfg(test)]
@@ -111,5 +154,59 @@ mod tests {
         game.guess(word.clone(), &word_list).unwrap();
         assert_eq!(game.state, GameState::Won);
         assert!(game.guess(word.clone(), &word_list).is_err());
+    }
+
+    #[test]
+
+    fn test_guess_get_letter_state() {
+        let guess = Guess {
+            word: String::from("abcbc"),
+            evaluation: vec![
+                Evaluation::Absent,
+                Evaluation::Absent,
+                Evaluation::Absent,
+                Evaluation::Present,
+                Evaluation::Correct,
+            ],
+        };
+
+        assert_eq!(LetterState::Absent, guess.get_letter_state('a'));
+        assert_eq!(LetterState::Present, guess.get_letter_state('b'));
+        assert_eq!(LetterState::Correct, guess.get_letter_state('c'));
+        assert_eq!(LetterState::Unknown, guess.get_letter_state('d'));
+    }
+
+    #[test]
+    fn test_game_get_letter_state() {
+        let solution = String::from("tales");
+        let mut game = Game::new(Code { value: 1234 }, solution.clone()).unwrap();
+
+        let mut word_list = HashSet::new();
+        word_list.insert(String::from("earth"));
+        word_list.insert(String::from("value"));
+        word_list.insert(String::from("slime"));
+
+        for word in &word_list {
+            game.guess(word.clone(), &word_list).unwrap();
+        }
+
+        assert_eq!(LetterState::Present, game.get_letter_state('t'));
+        assert_eq!(LetterState::Correct, game.get_letter_state('a'));
+        assert_eq!(LetterState::Correct, game.get_letter_state('l'));
+        assert_eq!(LetterState::Present, game.get_letter_state('e'));
+        assert_eq!(LetterState::Present, game.get_letter_state('s'));
+
+        assert_eq!(LetterState::Absent, game.get_letter_state('r'));
+        assert_eq!(LetterState::Absent, game.get_letter_state('h'));
+        assert_eq!(LetterState::Absent, game.get_letter_state('v'));
+        assert_eq!(LetterState::Absent, game.get_letter_state('u'));
+
+        assert_eq!(LetterState::Absent, game.get_letter_state('m'));
+        assert_eq!(LetterState::Absent, game.get_letter_state('i'));
+
+        assert_eq!(LetterState::Unknown, game.get_letter_state('w'));
+        assert_eq!(LetterState::Unknown, game.get_letter_state('x'));
+        assert_eq!(LetterState::Unknown, game.get_letter_state('y'));
+        assert_eq!(LetterState::Unknown, game.get_letter_state('z'));
     }
 }
