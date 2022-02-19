@@ -16,7 +16,7 @@ pub fn get_regional_indicator_emoji_with_zero_width_space(c: char) -> String {
     format!("{}\u{200c}", get_regional_indicator(c))
 }
 
-pub const KEYBOARD_LAYOUT: &[&str] = &[&"QWERTYUIOP", &"asdfghjkl", &"zxcvbnm"];
+pub const KEYBOARD_LAYOUT: &[&str] = &[&"qwertyuiop", &"asdfghjkl", &"zxcvbnm"];
 
 #[cfg(test)]
 mod tests {

@@ -173,6 +173,7 @@ impl Game {
     }
 
     pub fn get_letter_state(&self, letter: char) -> LetterState {
+        let letter = letter.to_ascii_lowercase();
         self.history
             .iter()
             .map(|guess| guess.get_letter_state(letter))
