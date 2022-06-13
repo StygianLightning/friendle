@@ -74,6 +74,9 @@ impl ShowKeyboardButton {
         })
         .await?;
 
+        // TODO We could remove the button from the message here 
+        // And ideally (though optional), from previous message(s) that were not interacted with as well.
+
         Ok(())
     }
 }

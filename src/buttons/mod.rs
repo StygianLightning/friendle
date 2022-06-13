@@ -8,11 +8,7 @@ use std::{
 
 use serenity::{
     client::Context,
-    model::{
-        interactions::{
-            message_component::{MessageComponentInteraction},
-        },
-    },
+    model::interactions::message_component::MessageComponentInteraction,
 };
 
 use show_keyboard_button::ShowKeyboardButton;
@@ -20,6 +16,11 @@ use show_keyboard_button::ShowKeyboardButton;
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FriendleButton {
     ShowKeyboard(ShowKeyboardButton),
+    // TODO add buttons for 
+    // - strict mode 
+    // - displaying the completed evaluation in a format that can be shared 
+    //   such that the coloured squares are displayed correctly when the message
+    //   is copy/pasted by the user.
 }
 
 #[derive(Debug)]

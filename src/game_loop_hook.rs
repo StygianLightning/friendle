@@ -14,6 +14,10 @@ use serenity::utils::MessageBuilder;
 
 #[hook]
 pub async fn message_hook(ctx: &Context, msg: &Message) {
+    // In theory, we could use serenity's collector feature to
+    // await the next response in the channel where the game was started
+    // instead of using a message hook; however, when I tested it,
+    // callbacks were never actually executed that way.
     if let Err(err) = handle_message(ctx, msg).await {
         eprintln!("Encountered error in game loop: {err}");
     }
@@ -28,6 +32,7 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
     }
 
     if msg.guild_id.is_some() {
+        // ideally, this reply should be ephemeral, but ephemeral messages are restricted to interaction responses
         msg.reply(ctx, "Guesses are only accepted in DMs").await?;
         return Ok(());
     }
@@ -74,7 +79,8 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
         }
         GameState::Won => {
             // TODO add extra win messages and select one at random for fun
-            msg.reply(&ctx, format!("You won! Good job :)")).await?;
+            msg.reply(&ctx, String::from("You won! Good job :)"))
+                .await?;
             let line = format!("{}/{}", game.history().len(), constants::MAX_GUESSES);
             message_builder.push_line(format!("Friendle `{code}`: {line}"));
         }
@@ -83,7 +89,7 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
             message_builder.push(format!(
                 "{}/{} [in progress]",
                 game.history().len(),
-                crate::constants::MAX_GUESSES
+                constants::MAX_GUESSES
             ));
 
             if game.flags().contains(&GameFlag::SolutionNotInWordList) {

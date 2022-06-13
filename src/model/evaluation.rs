@@ -9,6 +9,8 @@ pub enum Evaluation {
     Correct,
 }
 
+// We use red instead of Wordle's black/white since we have no way of knowing whether
+// the user uses Dark mode or Light mode.
 const EVALUATION_EMOTES: &[char] = &['🟥', '🟨', '🟩'];
 
 pub fn get_emoji(evaluation: Evaluation) -> char {

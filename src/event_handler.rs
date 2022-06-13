@@ -19,6 +19,8 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.name);
     }
 
+    // This could be handled via Serenity's `collector` feature in theory, 
+    // but for some reason, callbacks were never actually called when I tested that.
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         match interaction {
             Interaction::MessageComponent(ref mci)
