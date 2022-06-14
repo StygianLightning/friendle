@@ -74,8 +74,13 @@ impl ShowKeyboardButton {
         })
         .await?;
 
-        // TODO We could remove the button from the message here 
-        // And ideally (though optional), from previous message(s) that were not interacted with as well.
+        // Remove the action rows from the original message.
+        // Ideally, we could also remove them from previous messages that were not interacted with.
+        // For now, this should be sufficient.
+        mci.message
+            .clone()
+            .edit(ctx, |m| m.components(|c| c.set_action_rows(vec![])))
+            .await?;
 
         Ok(())
     }

@@ -20,6 +20,8 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
             Ok(_) => {
                 let code = crate::model::coding::encode(word);
                 let value = code.value;
+
+                // TODO check if the word is in the supported word list. If it isn't, send an extra warning message!
                 msg.reply(
                     ctx,
                     "To play a game of Wordle with your secret word, use the following command:",
