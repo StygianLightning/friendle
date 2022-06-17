@@ -1,5 +1,6 @@
 use crate::model::validate_word::validate_word_format;
 use crate::util::extract_second_word;
+use crate::wordlist::WordList;
 use serenity::client::Context;
 use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
@@ -21,12 +22,16 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
                 let code = crate::model::coding::encode(word);
                 let value = code.value;
 
-                // TODO check if the word is in the supported word list. If it isn't, send an extra warning message!
-                msg.reply(
-                    ctx,
-                    "To play a game of Wordle with your secret word, use the following command:",
-                )
-                .await?;
+                let data = ctx.data.read().await;
+                let word_list = data.get::<WordList>().unwrap();
+                let mut reply = String::from(
+                    "To play a game of Wordle with your secret word, use the following command.\n",
+                );
+                if !word_list.words.contains(word) {
+                    reply += "Note that your word is not in the original Wordle word list.";
+                };
+
+                msg.reply(ctx, reply).await?;
                 msg.reply(ctx, format!("`.play {value}`")).await?;
             }
         }
