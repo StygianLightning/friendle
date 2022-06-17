@@ -72,7 +72,7 @@ pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
                             msg.reply(ctx, "Game aleady in progress!").await?;
                         }
                         GameCreationState::ErrorDuringCreation => {
-                            msg.reply(ctx, format!("Encountered an internal error."))
+                            msg.reply(ctx, String::from("Encountered an internal error."))
                                 .await?;
                         }
                         GameCreationState::SuccessfullyCreated(flags) => {

@@ -26,7 +26,7 @@ pub async fn message_hook(ctx: &Context, msg: &Message) {
 async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
     let data = ctx.data.read().await;
 
-    if msg.content.starts_with(".") {
+    if msg.content.starts_with('.') {
         // ignore commands
         return Ok(());
     }

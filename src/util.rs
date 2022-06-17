@@ -16,7 +16,7 @@ pub fn get_regional_indicator_emoji_with_zero_width_space(c: char) -> String {
     format!("{}\u{200c}", get_regional_indicator(c))
 }
 
-pub const KEYBOARD_LAYOUT: &[&str] = &[&"qwertyuiop", &"asdfghjkl", &"zxcvbnm"];
+pub const KEYBOARD_LAYOUT: &[&str] = &["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 #[cfg(test)]
 mod tests {
@@ -40,10 +40,7 @@ mod tests {
 
     #[test]
     fn test_all_letters_present_in_layout() {
-        let len = KEYBOARD_LAYOUT
-            .iter()
-            .map(|s| s.len())
-            .fold(0, |a, b| a + b);
+        let len: usize = KEYBOARD_LAYOUT.iter().map(|s| s.len()).sum();
         assert_eq!(len, 26);
     }
 }
