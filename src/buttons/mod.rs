@@ -1,3 +1,4 @@
+pub mod copy_result_button;
 pub mod show_keyboard_button;
 
 use std::{
@@ -7,20 +8,16 @@ use std::{
 };
 
 use serenity::{
-    client::Context,
-    model::interactions::message_component::MessageComponentInteraction,
+    client::Context, model::interactions::message_component::MessageComponentInteraction,
 };
 
+use copy_result_button::CopyResultButton;
 use show_keyboard_button::ShowKeyboardButton;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FriendleButton {
-    ShowKeyboard(ShowKeyboardButton),
-    // TODO add buttons for 
-    // - strict mode 
-    // - displaying the completed evaluation in a format that can be shared 
-    //   such that the coloured squares are displayed correctly when the message
-    //   is copy/pasted by the user.
+    ShowKeyboard,
+    CopyResultButton,
 }
 
 #[derive(Debug)]
@@ -39,7 +36,8 @@ impl FromStr for FriendleButton {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            ShowKeyboardButton::ID => Ok(FriendleButton::ShowKeyboard(ShowKeyboardButton {})),
+            ShowKeyboardButton::ID => Ok(FriendleButton::ShowKeyboard),
+            CopyResultButton::ID => Ok(FriendleButton::CopyResultButton),
             _ => Err(ButtonParseError(s.to_string())),
         }
     }
@@ -48,9 +46,8 @@ impl FromStr for FriendleButton {
 impl FriendleButton {
     pub async fn handle_interaction(self, ctx: &Context, mci: &MessageComponentInteraction) {
         if let Err(e) = match self {
-            FriendleButton::ShowKeyboard(_) => {
-                ShowKeyboardButton::handle_interaction(ctx, mci).await
-            }
+            FriendleButton::ShowKeyboard => ShowKeyboardButton::handle_interaction(ctx, mci).await,
+            FriendleButton::CopyResultButton => todo!(),
         } {
             eprintln!("Error during button interaction: {e}");
         }
