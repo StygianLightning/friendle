@@ -39,7 +39,7 @@ pub const DISCORD_APPLICATION_ID: &str = "FRIENDLE_APPLICATION_ID";
 pub async fn main() -> Result<(), Box<dyn Error>> {
     // The Application Id is usually the Bot User Id. It is needed for components
     let application_id: u64 = env::var(DISCORD_APPLICATION_ID)
-        .expect(&format!("{DISCORD_APPLICATION_ID} not set"))
+        .unwrap_or_else(|_| panic!("{DISCORD_APPLICATION_ID} not set"))
         .parse()
         .expect("application id is not a valid id");
 

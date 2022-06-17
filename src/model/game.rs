@@ -93,7 +93,6 @@ impl LetterState {
 
 impl Game {
     pub fn new(code: Code, solution: String, word_list: &HashSet<String>) -> Result<Self> {
-        // TODO add word list and check if solution is in word list; if not, add a flag here and a warning to each in-progress state and the initial message!
         validate_word_format(&solution)?;
         let mut flags = GameFlags::default();
 
