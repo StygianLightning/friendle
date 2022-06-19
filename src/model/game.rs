@@ -1,11 +1,12 @@
 use super::coding::Code;
 use super::evaluation::{evaluate, get_emoji, EmojiMode, Evaluation};
+use super::guess_error::GuessError;
+use super::knowledge::Knowledge;
 use super::validate_word::validate_word_format;
 use crate::constants::{self, MAX_GUESSES};
 use crate::util::get_regional_indicator_emoji_with_zero_width_space;
-use anyhow::{bail, Result};
 use std::collections::HashSet;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Clone)]
 pub struct Guess {
@@ -37,9 +38,22 @@ pub enum GameState {
     Lost,
 }
 
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum StrictMode {
+    Enabled,
+    Disabled,
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum ModeChangeError {
+    AlreadySet,
+    TooManyGuessesAlready,
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum GameFlag {
     SolutionNotInWordList,
+    StrictModeEnabled,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
@@ -53,6 +67,12 @@ impl Deref for GameFlags {
     }
 }
 
+impl DerefMut for GameFlags {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Game {
     code: Code,
@@ -60,6 +80,7 @@ pub struct Game {
     solution: String,
     state: GameState,
     history: Vec<Guess>,
+    knowledge: Knowledge,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
@@ -92,7 +113,12 @@ impl LetterState {
 }
 
 impl Game {
-    pub fn new(code: Code, solution: String, word_list: &HashSet<String>) -> Result<Self> {
+    pub fn new(
+        code: Code,
+        solution: String,
+        word_list: &HashSet<String>,
+    ) -> Result<Self, GuessError> {
+        let word_length = solution.len();
         validate_word_format(&solution)?;
         let mut flags = GameFlags::default();
 
@@ -106,11 +132,16 @@ impl Game {
             history: vec![],
             state: GameState::InProgress,
             flags,
+            knowledge: Knowledge::new(word_length),
         })
     }
 
     pub fn flags(&self) -> &GameFlags {
         &self.flags
+    }
+
+    pub fn flags_mut(&mut self) -> &mut GameFlags {
+        &mut self.flags
     }
 
     pub fn code(&self) -> Code {
@@ -125,26 +156,91 @@ impl Game {
         &self.history
     }
 
+    pub fn can_switch_to_mode(&self, mode: StrictMode) -> Result<(), ModeChangeError> {
+        if mode == self.get_strict_mode() {
+            return Err(ModeChangeError::AlreadySet);
+        }
+
+        match self.get_strict_mode() {
+            // we're in strict mode and switching to non-strict mode, which is always possible
+            StrictMode::Enabled => Ok(()),
+            StrictMode::Disabled => {
+                // we want to switch to strict mode, which is only possible until we're one guess in.
+                if self.history.len() <= 1 {
+                    Ok(())
+                } else {
+                    Err(ModeChangeError::TooManyGuessesAlready)
+                }
+            }
+        }
+    }
+
+    pub fn get_strict_mode(&self) -> StrictMode {
+        if self.flags.contains(&GameFlag::StrictModeEnabled) {
+            StrictMode::Enabled
+        } else {
+            StrictMode::Disabled
+        }
+    }
+
+    pub fn set_strict_mode(&mut self, mode: StrictMode) -> Result<(), ModeChangeError> {
+        self.can_switch_to_mode(mode)?;
+        match mode {
+            StrictMode::Disabled => {
+                self.flags.remove(&GameFlag::StrictModeEnabled);
+            }
+            StrictMode::Enabled => {
+                // can only switch to strict mode if there has been at most one guess.
+                self.flags.insert(GameFlag::StrictModeEnabled);
+            }
+        }
+        Ok(())
+    }
+
     pub fn state(&self) -> GameState {
         self.state
     }
 
-    pub fn guess(&mut self, guess: String, word_list: &HashSet<String>) -> Result<()> {
+    pub fn guess(
+        &mut self,
+        guessed_word: String,
+        word_list: &HashSet<String>,
+    ) -> Result<(), GuessError> {
         if self.state != GameState::InProgress {
-            bail!("Game is already finished.");
+            return Err(GuessError::GameNotInProgress);
         }
-        let evaluation = evaluate(&guess, &self.solution, word_list)?;
-        if evaluation.iter().all(|eval| *eval == Evaluation::Correct) {
+        let evaluation = evaluate(&guessed_word, &self.solution, word_list)?;
+        let guess_eval = Guess {
+            word: guessed_word,
+            evaluation,
+        };
+        let res = self.knowledge.add(&guess_eval);
+        if res.is_err() {
+            if self.flags.contains(&GameFlag::StrictModeEnabled) {
+                res?;
+            }
+        }
+
+        if guess_eval
+            .evaluation
+            .iter()
+            .all(|eval| *eval == Evaluation::Correct)
+        {
             self.state = GameState::Won;
         }
-        self.history.push(Guess {
-            word: guess,
-            evaluation,
-        });
+        self.history.push(guess_eval);
         if self.state != GameState::Won && self.history.len() == MAX_GUESSES {
             self.state = GameState::Lost;
         }
         Ok(())
+    }
+
+    fn strict_mode_star(&self) -> &str {
+        if self.get_strict_mode() == StrictMode::Enabled {
+            "*"
+        } else {
+            " "
+        }
     }
 
     pub fn display_game_state_header(&self, message_builder: &mut serenity::utils::MessageBuilder) {
@@ -153,9 +249,10 @@ impl Game {
             GameState::InProgress => {
                 message_builder.push_line(format!("Friendle `{code}`"));
                 message_builder.push(format!(
-                    "{}/{} [in progress]",
+                    "{}/{}{} [in progress]",
                     self.history().len(),
-                    constants::MAX_GUESSES
+                    constants::MAX_GUESSES,
+                    self.strict_mode_star(),
                 ));
 
                 if self.flags().contains(&GameFlag::SolutionNotInWordList) {
@@ -164,11 +261,16 @@ impl Game {
                 message_builder.push_line("");
             }
             GameState::Won => {
-                let line = format!("{}/{}", self.history().len(), constants::MAX_GUESSES);
+                let line = format!(
+                    "{}/{}{}",
+                    self.history().len(),
+                    constants::MAX_GUESSES,
+                    self.strict_mode_star()
+                );
                 message_builder.push_line(format!("Friendle `{code}`: {line}"));
             }
             GameState::Lost => {
-                let line = format!("X/{}", constants::MAX_GUESSES);
+                let line = format!("X/{}{}", constants::MAX_GUESSES, self.strict_mode_star());
                 message_builder.push_line(format!("Friendle `{code}`: {line}"));
             }
         }
@@ -215,6 +317,45 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn set_strict_mode() {
+        let solution = String::from("tales");
+
+        let mut word_list = HashSet::new();
+        word_list.insert(String::from("earth"));
+        word_list.insert(String::from("value"));
+        word_list.insert(String::from("slime"));
+
+        let mut game = Game::new(Code { value: 1234 }, solution, &word_list).unwrap();
+
+        for _ in 0..2 {
+            // try changing modes. We do two iterations with one guess in between.
+            // We start in non-strict mode
+            assert_eq!(game.get_strict_mode(), StrictMode::Disabled);
+            assert_eq!(
+                game.set_strict_mode(StrictMode::Disabled),
+                Err(ModeChangeError::AlreadySet)
+            );
+
+            // setting strict mode succeeds
+            assert_eq!(game.set_strict_mode(StrictMode::Enabled), Ok(()));
+            // setting the same mode again fails
+            assert_eq!(
+                game.set_strict_mode(StrictMode::Enabled),
+                Err(ModeChangeError::AlreadySet)
+            );
+            // going back to non-strict mode always works.
+            assert_eq!(game.set_strict_mode(StrictMode::Disabled), Ok(()));
+
+            game.guess(String::from("earth"), &word_list).unwrap();
+        }
+
+        assert_eq!(
+            game.set_strict_mode(StrictMode::Enabled),
+            Err(ModeChangeError::TooManyGuessesAlready)
+        );
+    }
 
     #[test]
     fn test_win() {

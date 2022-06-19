@@ -1,9 +1,9 @@
 use crate::buttons::copy_result_button::CopyResultButton;
 
-
+use crate::buttons::mode_button::ModeButton;
 use crate::buttons::show_keyboard_button::ShowKeyboardButton;
 use crate::model::evaluation::EmojiMode;
-use crate::model::game::{GameState};
+use crate::model::game::{GameState, StrictMode};
 use crate::player::PlayerState;
 
 use crate::wordlist::WordList;
@@ -96,7 +96,21 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
             match game_state {
                 GameState::InProgress => {
                     m.components(|comps| {
-                        comps.create_action_row(|row| row.add_button(ShowKeyboardButton::button()));
+                        comps.create_action_row(|row| {
+                            row.add_button(ShowKeyboardButton::button());
+                            let target_mode =
+                                if game.can_switch_to_mode(StrictMode::Disabled).is_ok() {
+                                    Some(StrictMode::Disabled)
+                                } else if game.can_switch_to_mode(StrictMode::Enabled).is_ok() {
+                                    Some(StrictMode::Enabled)
+                                } else {
+                                    None
+                                };
+                            if let Some(mode) = target_mode {
+                                row.add_button(ModeButton::new(mode).mode_button());
+                            }
+                            row
+                        });
                         comps
                     });
                 }

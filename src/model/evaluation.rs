@@ -1,4 +1,4 @@
-use super::validate_word::validate_word;
+use super::{guess_error::GuessError, validate_word::validate_word};
 use crate::constants::WORD_LENGTH;
 use std::collections::{HashMap, HashSet};
 
@@ -32,7 +32,7 @@ pub fn evaluate(
     guess: &str,
     solution: &str,
     word_list: &HashSet<String>,
-) -> anyhow::Result<Vec<Evaluation>> {
+) -> Result<Vec<Evaluation>, GuessError> {
     validate_word(guess, word_list, solution)?;
     let chars_guess = guess.chars().collect::<Vec<_>>();
     let chars_solution = solution.chars().collect::<Vec<_>>();

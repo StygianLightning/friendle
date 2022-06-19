@@ -1,21 +1,31 @@
 use crate::constants::WORD_LENGTH;
-use anyhow::{bail, Result};
 use std::collections::HashSet;
 
-pub fn validate_word_format(word: &str) -> Result<()> {
+use super::guess_error::{GuessError, InvalidWordError};
+
+pub fn validate_word_format(word: &str) -> Result<(), GuessError> {
     if word.len() != WORD_LENGTH {
-        bail!("Expected word of length {WORD_LENGTH}, received {word}");
+        return Err(GuessError::InvalidWord(InvalidWordError::WrongLength {
+            expected_length: WORD_LENGTH,
+            given_length: word.len(),
+        }));
     }
     if !(word.is_ascii() && word.chars().all(|c| c.is_alphabetic())) {
-        bail!("Only English words with letters A-Z are supported");
+        return Err(GuessError::InvalidWord(InvalidWordError::NonLatinAlpha));
     }
     Ok(())
 }
 
-pub fn validate_word(word: &str, word_list: &HashSet<String>, solution: &str) -> Result<()> {
+pub fn validate_word(
+    word: &str,
+    word_list: &HashSet<String>,
+    solution: &str,
+) -> Result<(), GuessError> {
     validate_word_format(word)?;
     if word != solution && !word_list.contains(word) {
-        bail!("Invalid word {word}");
+        Err(InvalidWordError::NotInWordList {
+            word: String::from(word),
+        })?;
     }
     Ok(())
 }

@@ -28,6 +28,9 @@ pub async fn remove_buttons(
     // Remove the action rows from the original message.
     // Ideally, we could also remove them from previous messages that were not interacted with.
     // For now, this should be sufficient.
+
+    // TODO don't remove all buttons, only the buttons that were interacted with.
+    // If strict mode was enabled/disabled, add the opposite button instead.
     mci.message
         .edit(ctx, |m| m.components(|c| c.set_action_rows(vec![])))
         .await
