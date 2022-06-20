@@ -1,3 +1,8 @@
+use serenity::{
+    client::Context, model::interactions::message_component::MessageComponentInteraction,
+    prelude::SerenityError,
+};
+
 pub fn extract_second_word(text: &str) -> Option<&str> {
     text.split_ascii_whitespace().skip(1).take(1).next()
 }
@@ -14,6 +19,18 @@ fn get_regional_indicator(letter: char) -> char {
 pub fn get_regional_indicator_emoji_with_zero_width_space(c: char) -> String {
     // add a zero-width space unicode character after each emoji to prevent Serenity from merging successive emojis.
     format!("{}\u{200c}", get_regional_indicator(c))
+}
+
+pub async fn remove_buttons(
+    mci: &mut MessageComponentInteraction,
+    ctx: &Context,
+) -> Result<(), SerenityError> {
+    // Remove the action rows from the original message.
+    // Ideally, we could also remove them from previous messages that were not interacted with.
+    // For now, this should be sufficient.
+    mci.message
+        .edit(ctx, |m| m.components(|c| c.set_action_rows(vec![])))
+        .await
 }
 
 pub const KEYBOARD_LAYOUT: &[&str] = &["qwertyuiop", "asdfghjkl", "zxcvbnm"];

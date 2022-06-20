@@ -44,7 +44,7 @@ impl FromStr for FriendleButton {
 }
 
 impl FriendleButton {
-    pub async fn handle_interaction(self, ctx: &Context, mci: &MessageComponentInteraction) {
+    pub async fn handle_interaction(self, ctx: &Context, mci: &mut MessageComponentInteraction) {
         if let Err(e) = match self {
             FriendleButton::ShowKeyboard => ShowKeyboardButton::handle_interaction(ctx, mci).await,
             FriendleButton::CopyResultButton => todo!(),

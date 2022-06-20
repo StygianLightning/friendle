@@ -11,7 +11,7 @@ use serenity::{
 use crate::{
     model::{evaluation::get_emoji, game::LetterState},
     player::PlayerState,
-    util::{get_regional_indicator_emoji_with_zero_width_space, KEYBOARD_LAYOUT},
+    util::{get_regional_indicator_emoji_with_zero_width_space, remove_buttons, KEYBOARD_LAYOUT},
 };
 
 pub struct ShowKeyboardButton {}
@@ -33,7 +33,7 @@ impl ShowKeyboardButton {
 
     pub async fn handle_interaction(
         ctx: &Context,
-        mci: &MessageComponentInteraction,
+        mci: &mut MessageComponentInteraction,
     ) -> anyhow::Result<()> {
         let data = ctx.data.read().await;
         let player_state = data.get::<PlayerState>().unwrap();
@@ -73,13 +73,7 @@ impl ShowKeyboardButton {
         })
         .await?;
 
-        // Remove the action rows from the original message.
-        // Ideally, we could also remove them from previous messages that were not interacted with.
-        // For now, this should be sufficient.
-        mci.message
-            .clone()
-            .edit(ctx, |m| m.components(|c| c.set_action_rows(vec![])))
-            .await?;
+        remove_buttons(mci, ctx).await?;
 
         Ok(())
     }

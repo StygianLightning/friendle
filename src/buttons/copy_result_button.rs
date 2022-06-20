@@ -8,7 +8,7 @@ use serenity::{
     utils::MessageBuilder,
 };
 
-use crate::player::PlayerState;
+use crate::{player::PlayerState, util::remove_buttons};
 
 pub struct CopyResultButton {}
 
@@ -27,7 +27,7 @@ impl CopyResultButton {
 
     pub async fn handle_interaction(
         ctx: &Context,
-        mci: &MessageComponentInteraction,
+        mci: &mut MessageComponentInteraction,
     ) -> anyhow::Result<()> {
         let data = ctx.data.read().await;
         let player_state = data.get::<PlayerState>().unwrap();
@@ -53,13 +53,7 @@ impl CopyResultButton {
         })
         .await?;
 
-        // Remove the action rows from the original message.
-        // Ideally, we could also remove them from previous messages that were not interacted with.
-        // For now, this should be sufficient.
-        mci.message
-            .clone()
-            .edit(ctx, |m| m.components(|c| c.set_action_rows(vec![])))
-            .await?;
+        remove_buttons(mci, ctx).await?;
 
         Ok(())
     }
