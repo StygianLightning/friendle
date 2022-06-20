@@ -9,12 +9,23 @@ pub enum Evaluation {
     Correct,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum EmojiMode {
+    Unicode,
+    DiscordName,
+}
+
 // We use red instead of Wordle's black/white since we have no way of knowing whether
 // the user uses Dark mode or Light mode.
-const EVALUATION_EMOTES: &[char] = &['🟥', '🟨', '🟩'];
+const EVALUATION_EMOTES: &[&str] = &["🟥", "🟨", "🟩"];
+const EVALUATION_EMOTE_DISCORD_NAMES: &[&str] =
+    &[":red_square:", ":yellow_square:", ":green_square:"];
 
-pub fn get_emoji(evaluation: Evaluation) -> char {
-    EVALUATION_EMOTES[evaluation as usize]
+pub fn get_emoji(evaluation: Evaluation, emoji_mode: EmojiMode) -> &'static str {
+    match emoji_mode {
+        EmojiMode::Unicode => EVALUATION_EMOTES[evaluation as usize],
+        EmojiMode::DiscordName => EVALUATION_EMOTE_DISCORD_NAMES[evaluation as usize],
+    }
 }
 
 pub fn evaluate(
@@ -113,8 +124,22 @@ mod tests {
 
     #[test]
     fn test_evaluation_emoji() {
-        assert_eq!(get_emoji(Evaluation::Absent), '🟥');
-        assert_eq!(get_emoji(Evaluation::Present), '🟨');
-        assert_eq!(get_emoji(Evaluation::Correct), '🟩');
+        assert_eq!(get_emoji(Evaluation::Absent, EmojiMode::Unicode), "🟥");
+        assert_eq!(
+            get_emoji(Evaluation::Absent, EmojiMode::DiscordName),
+            ":red_square:"
+        );
+
+        assert_eq!(get_emoji(Evaluation::Present, EmojiMode::Unicode), "🟨");
+        assert_eq!(
+            get_emoji(Evaluation::Present, EmojiMode::DiscordName),
+            ":yellow_square:"
+        );
+
+        assert_eq!(get_emoji(Evaluation::Correct, EmojiMode::Unicode), "🟩");
+        assert_eq!(
+            get_emoji(Evaluation::Correct, EmojiMode::DiscordName),
+            ":green_square:"
+        );
     }
 }

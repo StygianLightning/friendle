@@ -1,6 +1,6 @@
 use crate::model::coding::{decode, Code};
 
-use crate::model::game::{Game, GameFlag, GameFlags};
+use crate::model::game::{Game, GameFlag, GameFlags, GameState};
 
 use crate::player::PlayerState;
 use crate::util::extract_second_word;
@@ -11,7 +11,7 @@ use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
 use serenity::utils::MessageBuilder;
 
-use std::collections::hash_map::Entry;
+
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -29,15 +29,21 @@ fn construct_game_opt_result(
     word_list: &HashSet<String>,
 ) -> GameCreationState {
     let mut lock = player_state.lock().unwrap();
-    let entry = lock.games_per_player.entry(player_id);
-    if matches!(entry, Entry::Occupied(_)) {
-        return GameCreationState::AlreadyInProgress;
+    let game = lock.games_per_player.get(&player_id);
+
+    if let Some(game) = game {
+        // Report the game as in-progress only if it has not been finished yet.
+        // If the game has already finished, we're free to start a new one.
+        if game.state() == GameState::InProgress {
+            return GameCreationState::AlreadyInProgress;
+        }
     }
 
     match Game::new(code, solution, word_list) {
         Ok(game) => {
             let flags = game.flags().clone();
-            entry.or_insert(game);
+            // We could use the entry API above, but Entry::insert_entry is nightly-only, so we'd have to call HashMap::insert anyway.
+            lock.games_per_player.insert(player_id, game);
             GameCreationState::SuccessfullyCreated(flags)
         }
         Err(err) => {

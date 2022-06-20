@@ -47,7 +47,9 @@ impl FriendleButton {
     pub async fn handle_interaction(self, ctx: &Context, mci: &mut MessageComponentInteraction) {
         if let Err(e) = match self {
             FriendleButton::ShowKeyboard => ShowKeyboardButton::handle_interaction(ctx, mci).await,
-            FriendleButton::CopyResultButton => todo!(),
+            FriendleButton::CopyResultButton => {
+                CopyResultButton::handle_interaction(ctx, mci).await
+            }
         } {
             eprintln!("Error during button interaction: {e}");
         }

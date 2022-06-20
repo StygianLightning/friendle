@@ -9,7 +9,10 @@ use serenity::{
 };
 
 use crate::{
-    model::{evaluation::get_emoji, game::LetterState},
+    model::{
+        evaluation::{get_emoji, EmojiMode},
+        game::LetterState,
+    },
     player::PlayerState,
     util::{get_regional_indicator_emoji_with_zero_width_space, remove_buttons, KEYBOARD_LAYOUT},
 };
@@ -60,7 +63,10 @@ impl ShowKeyboardButton {
                                     .push(get_regional_indicator_emoji_with_zero_width_space(c));
                             }
                             _ => {
-                                msg_builder.push(get_emoji(state.to_evaluation().unwrap()));
+                                msg_builder.push(get_emoji(
+                                    state.to_evaluation().unwrap(),
+                                    EmojiMode::Unicode,
+                                ));
                             }
                         }
                     }

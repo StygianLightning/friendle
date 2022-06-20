@@ -1,7 +1,7 @@
 use super::coding::Code;
-use super::evaluation::{evaluate, get_emoji, Evaluation};
+use super::evaluation::{evaluate, get_emoji, EmojiMode, Evaluation};
 use super::validate_word::validate_word_format;
-use crate::constants::MAX_GUESSES;
+use crate::constants::{self, MAX_GUESSES};
 use crate::util::get_regional_indicator_emoji_with_zero_width_space;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
@@ -147,7 +147,38 @@ impl Game {
         Ok(())
     }
 
-    pub fn display_state(&self, message_builder: &mut serenity::utils::MessageBuilder) {
+    pub fn display_game_state_header(&self, message_builder: &mut serenity::utils::MessageBuilder) {
+        let code = self.code.value;
+        match self.state {
+            GameState::InProgress => {
+                message_builder.push_line(format!("Friendle `{code}`"));
+                message_builder.push(format!(
+                    "{}/{} [in progress]",
+                    self.history().len(),
+                    constants::MAX_GUESSES
+                ));
+
+                if self.flags().contains(&GameFlag::SolutionNotInWordList) {
+                    message_builder.push(" [not in word list]");
+                }
+                message_builder.push_line("");
+            }
+            GameState::Won => {
+                let line = format!("{}/{}", self.history().len(), constants::MAX_GUESSES);
+                message_builder.push_line(format!("Friendle `{code}`: {line}"));
+            }
+            GameState::Lost => {
+                let line = format!("X/{}", constants::MAX_GUESSES);
+                message_builder.push_line(format!("Friendle `{code}`: {line}"));
+            }
+        }
+    }
+
+    pub fn display_state(
+        &self,
+        message_builder: &mut serenity::utils::MessageBuilder,
+        emoji_mode: EmojiMode,
+    ) {
         for guess in &self.history {
             if self.state == GameState::InProgress {
                 // guessed word converted to emojis
@@ -159,11 +190,11 @@ impl Game {
                 ));
             }
             // evaluation converted to emojis
-            message_builder.push_line_safe(String::from_iter(
+            message_builder.push_line(String::from_iter(
                 guess
                     .evaluation
                     .iter()
-                    .map(|eval| format!("{}", get_emoji(*eval))),
+                    .map(|eval| get_emoji(*eval, emoji_mode).to_string()),
             ));
             if self.state == GameState::InProgress {
                 message_builder.push_line_safe("");
@@ -192,7 +223,7 @@ mod tests {
         let mut game = Game::new(Code { value: 1234 }, word.clone(), &word_list).unwrap(); // not the real code, but it doesn't matter here since it's only used for reporting
         game.guess(word.clone(), &word_list).unwrap();
         assert_eq!(game.state, GameState::Won);
-        assert!(game.guess(word.clone(), &word_list).is_err());
+        assert!(game.guess(word, &word_list).is_err());
     }
 
     #[test]
@@ -223,7 +254,7 @@ mod tests {
         word_list.insert(String::from("value"));
         word_list.insert(String::from("slime"));
 
-        let mut game = Game::new(Code { value: 1234 }, solution.clone(), &word_list).unwrap();
+        let mut game = Game::new(Code { value: 1234 }, solution, &word_list).unwrap();
         for word in &word_list {
             game.guess(word.clone(), &word_list).unwrap();
         }

@@ -1,14 +1,18 @@
 use serenity::{
     builder::CreateButton,
     client::Context,
-    model::{
-        channel::ReactionType,
-        interactions::message_component::{ButtonStyle, MessageComponentInteraction},
-    },
+    model::interactions::message_component::{ButtonStyle, MessageComponentInteraction},
     utils::MessageBuilder,
 };
 
-use crate::{player::PlayerState, util::remove_buttons};
+use crate::{
+    model::{
+        evaluation::{EmojiMode},
+        game::GameState,
+    },
+    player::PlayerState,
+    util::remove_buttons,
+};
 
 pub struct CopyResultButton {}
 
@@ -43,9 +47,18 @@ impl CopyResultButton {
         let game = game.unwrap();
 
         mci.create_interaction_response(ctx, |r| {
-            // todo get evalutions
             r.interaction_response_data(|msg| {
                 let mut msg_builder = MessageBuilder::new();
+                msg_builder.push_line("```");
+                if game.state() == GameState::InProgress {
+                    msg_builder.push_line_safe("The current game isn't finished yet.");
+                } else {
+                    // Game is finished -> Display state
+                    game.display_game_state_header(&mut msg_builder);
+                    // evaluation converted to emojis
+                    game.display_state(&mut msg_builder, EmojiMode::DiscordName);
+                }
+                msg_builder.push_line("```");
                 msg.content(msg_builder.build());
                 msg
             });

@@ -1,7 +1,9 @@
-use crate::constants;
+use crate::buttons::copy_result_button::CopyResultButton;
+
 
 use crate::buttons::show_keyboard_button::ShowKeyboardButton;
-use crate::model::game::{GameFlag, GameState};
+use crate::model::evaluation::EmojiMode;
+use crate::model::game::{GameState};
 use crate::player::PlayerState;
 
 use crate::wordlist::WordList;
@@ -64,8 +66,8 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
 
     let mut message_builder = MessageBuilder::new();
 
-    let code = game.code().value;
     match game_state {
+        // Reply with an extra message if the game is now finished.
         GameState::Lost => {
             let solution = game.solution();
             // TODO add extra loss messages and select one at random for fun
@@ -74,54 +76,47 @@ async fn handle_message(ctx: &Context, msg: &Message) -> anyhow::Result<()> {
                 format!("Unfortunately, you're out of tries. The solution was ||`{solution}`||"),
             )
             .await?;
-            let line = format!("X/{}", constants::MAX_GUESSES);
-            message_builder.push_line(format!("Friendle `{code}`: {line}"));
         }
         GameState::Won => {
             // TODO add extra win messages and select one at random for fun
             msg.reply(&ctx, String::from("You won! Good job :)"))
                 .await?;
-            let line = format!("{}/{}", game.history().len(), constants::MAX_GUESSES);
-            message_builder.push_line(format!("Friendle `{code}`: {line}"));
         }
         GameState::InProgress => {
-            message_builder.push_line(format!("Friendle `{code}`"));
-            message_builder.push(format!(
-                "{}/{} [in progress]",
-                game.history().len(),
-                constants::MAX_GUESSES
-            ));
-
-            if game.flags().contains(&GameFlag::SolutionNotInWordList) {
-                message_builder.push(" [not in word list]");
-            }
-            message_builder.push_line("");
+            // no action
         }
     }
 
-    game.display_state(&mut message_builder);
+    game.display_game_state_header(&mut message_builder);
+    game.display_state(&mut message_builder, EmojiMode::Unicode);
 
     msg.channel_id
         .send_message(&ctx, |m| {
             m.content(message_builder);
-            if game_state == GameState::InProgress {
-                m.components(|comps| {
-                    comps.create_action_row(|row| row.add_button(ShowKeyboardButton::button()));
-                    comps
-                });
+            match game_state {
+                GameState::InProgress => {
+                    m.components(|comps| {
+                        comps.create_action_row(|row| row.add_button(ShowKeyboardButton::button()));
+                        comps
+                    });
+                }
+                _ => {
+                    m.components(|comps| {
+                        comps.create_action_row(|row| row.add_button(CopyResultButton::button()));
+                        comps
+                    });
+                }
             }
             m
         })
         .await?;
 
     {
-        // get the game state again and update it -- either write the new game state if it's still in progress or remove it if it's finished
+        // Get the game state again and update it.
+        // Always keep the game state until a new game is started, even if it's already finished.
+        // This allows us to run button commands to copy the game in a format a user can copy paste to share their results.
         let mut lock = player_state.lock().unwrap();
-        if game_state == GameState::InProgress {
-            lock.games_per_player.insert(user.id.0, game);
-        } else {
-            lock.games_per_player.remove(&user.id.0);
-        }
+        lock.games_per_player.insert(user.id.0, game);
     }
 
     Ok(())
