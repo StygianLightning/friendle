@@ -37,7 +37,7 @@ pub fn evaluate(
     let chars_guess = guess.chars().collect::<Vec<_>>();
     let chars_solution = solution.chars().collect::<Vec<_>>();
     let mut evaluation = vec![Evaluation::Absent; WORD_LENGTH as usize];
-    let mut solution_frequencies = letter_frequencies(&chars_solution);
+    let mut solution_frequencies = itertools::Itertools::counts(solution.chars());
 
     for i in 0..WORD_LENGTH {
         if chars_guess[i] == chars_solution[i] {
@@ -57,14 +57,6 @@ pub fn evaluate(
     }
 
     Ok(evaluation)
-}
-
-fn letter_frequencies(chars: &[char]) -> HashMap<char, usize> {
-    let mut freq = HashMap::new();
-    for c in chars {
-        *freq.entry(*c).or_default() += 1;
-    }
-    freq
 }
 
 #[cfg(test)]
@@ -116,7 +108,7 @@ mod tests {
     #[test]
     fn test_letter_frequencies() {
         let word = "abbac";
-        let freq = letter_frequencies(&word.chars().collect::<Vec<_>>());
+        let freq = itertools::Itertools::counts(word.chars());
         let mut frequencies_vec = freq.into_iter().collect::<Vec<_>>();
         frequencies_vec.sort_by(|(a, _), (b, _)| a.cmp(b));
         assert_eq!(frequencies_vec, vec![('a', 2usize), ('b', 2), ('c', 1)]);

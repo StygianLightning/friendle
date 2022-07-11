@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
@@ -209,9 +208,8 @@ impl Knowledge {
 
             let mut correct_count = 0;
             let mut has_absent_eval = false;
-            for i in 0..guess.word.len() {
+            for (i, eval) in guess.evaluation.iter().enumerate() {
                 if characters_in_guess[i] == c {
-                    let eval = &guess.evaluation[i];
                     if *eval == Evaluation::Absent {
                         has_absent_eval = true;
                     } else {
