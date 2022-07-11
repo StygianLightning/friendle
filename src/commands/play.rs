@@ -1,6 +1,7 @@
+use crate::buttons::mode_button::ModeButton;
 use crate::model::coding::{decode, Code};
 
-use crate::model::game::{Game, GameFlag, GameFlags, GameState};
+use crate::model::game::{Game, GameFlag, GameFlags, GameState, StrictMode};
 
 use crate::player::PlayerState;
 use crate::util::extract_second_word;
@@ -10,7 +11,6 @@ use serenity::client::Context;
 use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::channel::Message;
 use serenity::utils::MessageBuilder;
-
 
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -89,7 +89,21 @@ pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
                                 msg_builder.push_line("Btw, the solution to this one is not in the original word list.");
                             }
 
-                            msg.reply(ctx, msg_builder).await?;
+                            msg.channel_id
+                                .send_message(ctx, |m| {
+                                    m.content(msg_builder);
+                                    m.components(|comps| {
+                                        comps.create_action_row(|row| {
+                                            row.add_button(
+                                                ModeButton::new(StrictMode::Enabled).mode_button(),
+                                            );
+                                            row
+                                        });
+                                        comps
+                                    });
+                                    m
+                                })
+                                .await?;
                         }
                     }
                 }

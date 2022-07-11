@@ -14,7 +14,7 @@ use crate::{
         game::LetterState,
     },
     player::PlayerState,
-    util::{get_regional_indicator_emoji_with_zero_width_space, remove_buttons, KEYBOARD_LAYOUT},
+    util::{adjust_buttons, get_regional_indicator_emoji_with_zero_width_space, KEYBOARD_LAYOUT},
 };
 
 pub struct ShowKeyboardButton {}
@@ -79,7 +79,7 @@ impl ShowKeyboardButton {
         })
         .await?;
 
-        remove_buttons(mci, ctx).await?;
+        adjust_buttons(mci, &game, ctx).await?;
 
         Ok(())
     }

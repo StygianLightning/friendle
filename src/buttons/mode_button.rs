@@ -1,13 +1,17 @@
 use serenity::{
     builder::CreateButton,
     client::Context,
-    model::interactions::message_component::{ButtonStyle, MessageComponentInteraction},
+    model::{
+        channel::ReactionType,
+        interactions::message_component::{ButtonStyle, MessageComponentInteraction},
+    },
     utils::MessageBuilder,
 };
 
 use crate::{
     model::game::{ModeChangeError, StrictMode},
     player::PlayerState,
+    util::adjust_buttons,
 };
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -34,25 +38,29 @@ impl ModeButton {
 
 impl ModeButton {
     pub fn mode_button(self) -> CreateButton {
-        let mut show_keyboard_button = CreateButton::default();
-        show_keyboard_button.custom_id(self.get_id());
+        let mut mode_button = CreateButton::default();
+        mode_button.custom_id(self.get_id());
         let mode_text = match self.mode {
             StrictMode::Enabled => "Enable strict mode",
             StrictMode::Disabled => "Disable strict mode",
         };
-        show_keyboard_button.label(mode_text);
-        show_keyboard_button.style(ButtonStyle::Primary);
-        show_keyboard_button
+        mode_button.label(mode_text);
+        mode_button.emoji(ReactionType::Unicode(String::from(match self.mode {
+            StrictMode::Enabled => "🧐",  // display strict mode with monocle face
+            StrictMode::Disabled => "🙈", // non-strict mode: see-no-evil monkey
+        })));
+        mode_button.style(ButtonStyle::Primary);
+        mode_button
     }
 
     pub async fn handle_interaction(
         self,
         ctx: &Context,
-        mci: &MessageComponentInteraction,
+        mci: &mut MessageComponentInteraction,
     ) -> anyhow::Result<()> {
         let data = ctx.data.read().await;
         let player_state = data.get::<PlayerState>().unwrap();
-        let user = &mci.user;
+        let user = mci.user.clone();
         let game = {
             let mut lock = player_state.lock().unwrap();
             lock.games_per_player.get_mut(&user.id.0).cloned()
@@ -63,8 +71,6 @@ impl ModeButton {
         }
         let mut game = game.unwrap();
 
-        println!("{:?}", game);
-
         let change_message = match game.set_strict_mode(self.mode) {
             Err(ModeChangeError::AlreadySet) => "Requested mode is already set.",
             Err(ModeChangeError::TooManyGuessesAlready) => {
@@ -73,12 +79,6 @@ impl ModeButton {
             Ok(()) if game.get_strict_mode() == StrictMode::Disabled => "Disabled strict mode.",
             Ok(()) => "Enabled strict mode.",
         };
-
-        {
-            // Save the updated game state.
-            let mut lock = player_state.lock().unwrap();
-            lock.games_per_player.insert(user.id.0, game);
-        }
 
         mci.create_interaction_response(ctx, |r| {
             r.interaction_response_data(|msg| {
@@ -90,6 +90,14 @@ impl ModeButton {
             r
         })
         .await?;
+
+        adjust_buttons(mci, &game, ctx).await?;
+
+        {
+            // Save the updated game state.
+            let mut lock = player_state.lock().unwrap();
+            lock.games_per_player.insert(user.id.0, game);
+        }
 
         Ok(())
     }

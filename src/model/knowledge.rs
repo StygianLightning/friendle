@@ -72,16 +72,16 @@ pub struct Knowledge {
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum KnowledgeValidationError {
     #[error(
-        "Position {position} is known to be `{correct_character}` but `{given_character}` was given."
+        "Letter in position {} is known to be `{correct_character}` but `{given_character}` was given.", position + 1
     )]
     UnusedFixedCharacter {
         position: usize,
         given_character: char,
         correct_character: char,
     },
-    #[error("Position {position} is known to not be given character `{character}`.")]
+    #[error("Letter in position {} is known to not be `{character}`.", position + 1)]
     IncorrectPlacement { position: usize, character: char },
-    #[error("Character {character} is known to occur {bound}")]
+    #[error("Letter `{character}` is known to occur {bound}")]
     WrongCount {
         character: char,
         given_count: usize,
@@ -148,7 +148,7 @@ impl CharacterBound {
                     Ok(())
                 } else {
                     Err(KnowledgeValidationError::WrongCount {
-                        character: character,
+                        character,
                         given_count,
                         bound: *self,
                     })
@@ -159,7 +159,7 @@ impl CharacterBound {
                     Ok(())
                 } else {
                     Err(KnowledgeValidationError::WrongCount {
-                        character: character,
+                        character,
                         given_count,
                         bound: *self,
                     })
@@ -173,9 +173,7 @@ impl Knowledge {
     pub fn new(num_letters: usize) -> Self {
         Self {
             known_character_bounds: Default::default(),
-            positional_knowledge: (0..num_letters)
-                .map(|i| PositionalKnowledge::new(i))
-                .collect(),
+            positional_knowledge: (0..num_letters).map(PositionalKnowledge::new).collect(),
         }
     }
 

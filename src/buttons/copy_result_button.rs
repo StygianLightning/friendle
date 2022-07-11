@@ -6,12 +6,9 @@ use serenity::{
 };
 
 use crate::{
-    model::{
-        evaluation::{EmojiMode},
-        game::GameState,
-    },
+    model::{evaluation::EmojiMode, game::GameState},
     player::PlayerState,
-    util::remove_buttons,
+    util::adjust_buttons,
 };
 
 pub struct CopyResultButton {}
@@ -66,7 +63,7 @@ impl CopyResultButton {
         })
         .await?;
 
-        remove_buttons(mci, ctx).await?;
+        adjust_buttons(mci, &game, ctx).await?;
 
         Ok(())
     }

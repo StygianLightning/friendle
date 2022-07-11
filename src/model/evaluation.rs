@@ -1,6 +1,6 @@
 use super::{guess_error::GuessError, validate_word::validate_word};
 use crate::constants::WORD_LENGTH;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Evaluation {

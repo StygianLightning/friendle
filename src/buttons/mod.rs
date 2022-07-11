@@ -9,7 +9,8 @@ use std::{
 };
 
 use serenity::{
-    client::Context, model::interactions::message_component::MessageComponentInteraction,
+    builder::CreateButton, client::Context,
+    model::interactions::message_component::MessageComponentInteraction,
 };
 
 use copy_result_button::CopyResultButton;
@@ -68,6 +69,23 @@ impl FriendleButton {
             }
         } {
             eprintln!("Error during button interaction: {e}");
+            eprintln!("mci: {mci:?}");
+        }
+    }
+
+    pub fn create_button(&self) -> CreateButton {
+        match self {
+            FriendleButton::ShowKeyboard => ShowKeyboardButton::button(),
+            FriendleButton::ModeChangeButton(button) => button.mode_button(),
+            FriendleButton::CopyResultButton => CopyResultButton::button(),
+        }
+    }
+
+    pub fn id(self) -> &'static str {
+        match self {
+            FriendleButton::ShowKeyboard => ShowKeyboardButton::ID,
+            FriendleButton::ModeChangeButton(button) => button.get_id(),
+            FriendleButton::CopyResultButton => CopyResultButton::ID,
         }
     }
 }

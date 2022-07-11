@@ -1,11 +1,15 @@
+use crate::{
+    buttons::{mode_button::ModeButton, FriendleButton},
+    model::game::Game,
+};
 use serenity::{
-    client::Context, model::interactions::message_component::MessageComponentInteraction,
+    client::Context,
+    model::interactions::message_component::{ActionRowComponent, MessageComponentInteraction},
     prelude::SerenityError,
 };
+use std::str::FromStr;
 
-pub fn extract_second_word(text: &str) -> Option<&str> {
-    text.split_ascii_whitespace().skip(1).take(1).next()
-}
+pub const KEYBOARD_LAYOUT: &[&str] = &["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 const REGIONAL_INDICATORS: &[char] = &[
     '🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯', '🇰', '🇱', '🇲', '🇳', '🇴', '🇵', '🇶', '🇷', '🇸',
@@ -21,22 +25,97 @@ pub fn get_regional_indicator_emoji_with_zero_width_space(c: char) -> String {
     format!("{}\u{200c}", get_regional_indicator(c))
 }
 
-pub async fn remove_buttons(
-    mci: &mut MessageComponentInteraction,
-    ctx: &Context,
-) -> Result<(), SerenityError> {
-    // Remove the action rows from the original message.
-    // Ideally, we could also remove them from previous messages that were not interacted with.
-    // For now, this should be sufficient.
-
-    // TODO don't remove all buttons, only the buttons that were interacted with.
-    // If strict mode was enabled/disabled, add the opposite button instead.
-    mci.message
-        .edit(ctx, |m| m.components(|c| c.set_action_rows(vec![])))
-        .await
+pub fn extract_second_word(text: &str) -> Option<&str> {
+    text.split_ascii_whitespace().skip(1).take(1).next()
 }
 
-pub const KEYBOARD_LAYOUT: &[&str] = &["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+fn match_button_id(button_id: &str, interaction_id: &str, game: &Game) -> Option<FriendleButton> {
+    match FriendleButton::from_str(button_id) {
+        Ok(button) => {
+            if button.id() == interaction_id {
+                match button {
+                    // clicked buttons are removed, except for mode change buttons, which flip their target mode instead
+                    FriendleButton::ModeChangeButton(button) => {
+                        let inverted_mode = button.mode.invert();
+                        if game.can_switch_to_mode(inverted_mode).is_ok() {
+                            Some(FriendleButton::ModeChangeButton(ModeButton {
+                                mode: inverted_mode,
+                            }))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                }
+            } else {
+                Some(button)
+            }
+        }
+        Err(e) => {
+            eprintln!("Unknown button: {e}");
+            None
+        }
+    }
+}
+
+fn get_adjusted_button(
+    interaction_id: &str,
+    game: &Game,
+    component: &ActionRowComponent,
+) -> Option<FriendleButton> {
+    match component {
+        serenity::model::interactions::message_component::ActionRowComponent::Button(button) => {
+            button
+                .custom_id
+                .as_ref()
+                .and_then(|button_id| match_button_id(button_id, interaction_id, game))
+        }
+        serenity::model::interactions::message_component::ActionRowComponent::SelectMenu(_) => {
+            None // currently unused; we only use buttons!
+        }
+        _ => None, // only here for completeness
+    }
+}
+
+fn collect_adjusted_buttons(mci: &MessageComponentInteraction, game: &Game) -> Vec<FriendleButton> {
+    mci.message
+        .components
+        .get(0)
+        .map(|components| {
+            components
+                .components
+                .iter()
+                .filter_map(|component| get_adjusted_button(&mci.data.custom_id, game, component))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+pub async fn adjust_buttons(
+    mci: &mut MessageComponentInteraction,
+    game: &Game,
+    ctx: &Context,
+) -> Result<(), SerenityError> {
+    // All our buttons are currently in one action row.
+    let buttons = collect_adjusted_buttons(mci, game);
+    mci.message
+        .edit(ctx, |m| {
+            m.components(|c| {
+                if !buttons.is_empty() {
+                    c.create_action_row(|row| {
+                        for button in buttons {
+                            row.add_button(button.create_button());
+                        }
+                        row
+                    });
+                }
+                c
+            })
+        })
+        .await?;
+    println!("success");
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {

@@ -44,6 +44,15 @@ pub enum StrictMode {
     Disabled,
 }
 
+impl StrictMode {
+    pub fn invert(self) -> Self {
+        match self {
+            StrictMode::Enabled => StrictMode::Disabled,
+            StrictMode::Disabled => StrictMode::Enabled,
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum ModeChangeError {
     AlreadySet,
@@ -140,14 +149,6 @@ impl Game {
         &self.flags
     }
 
-    pub fn flags_mut(&mut self) -> &mut GameFlags {
-        &mut self.flags
-    }
-
-    pub fn code(&self) -> Code {
-        self.code
-    }
-
     pub fn solution(&self) -> &str {
         &self.solution
     }
@@ -215,10 +216,8 @@ impl Game {
             evaluation,
         };
         let res = self.knowledge.add(&guess_eval);
-        if res.is_err() {
-            if self.flags.contains(&GameFlag::StrictModeEnabled) {
-                res?;
-            }
+        if res.is_err() && self.flags.contains(&GameFlag::StrictModeEnabled) {
+            res?;
         }
 
         if guess_eval
