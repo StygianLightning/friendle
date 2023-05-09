@@ -36,7 +36,7 @@ pub fn evaluate(
     validate_word(guess, word_list, solution)?;
     let chars_guess = guess.chars().collect::<Vec<_>>();
     let chars_solution = solution.chars().collect::<Vec<_>>();
-    let mut evaluation = vec![Evaluation::Absent; WORD_LENGTH as usize];
+    let mut evaluation = vec![Evaluation::Absent; WORD_LENGTH];
     let mut solution_frequencies = itertools::Itertools::counts(solution.chars());
 
     for i in 0..WORD_LENGTH {
