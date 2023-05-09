@@ -113,7 +113,6 @@ pub async fn adjust_buttons(
             })
         })
         .await?;
-    println!("success");
     Ok(())
 }
 
