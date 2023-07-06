@@ -46,7 +46,6 @@ impl CopyResultButton {
         mci.create_interaction_response(ctx, |r| {
             r.interaction_response_data(|msg| {
                 let mut msg_builder = MessageBuilder::new();
-                msg_builder.push_line("```");
                 if game.state() == GameState::InProgress {
                     msg_builder.push_line_safe("The current game isn't finished yet.");
                 } else {
@@ -55,7 +54,6 @@ impl CopyResultButton {
                     // evaluation converted to emojis
                     game.display_state(&mut msg_builder, EmojiMode::DiscordName);
                 }
-                msg_builder.push_line("```");
                 msg.content(msg_builder.build());
                 msg
             });
