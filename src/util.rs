@@ -80,7 +80,7 @@ fn get_adjusted_button(
 fn collect_adjusted_buttons(mci: &MessageComponentInteraction, game: &Game) -> Vec<FriendleButton> {
     mci.message
         .components
-        .get(0)
+        .first()
         .map(|components| {
             components
                 .components

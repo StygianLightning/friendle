@@ -57,7 +57,8 @@ fn construct_game_opt_result(
 #[description = "Play a round of Wordle."]
 #[only_in(dm)]
 pub async fn play(ctx: &Context, msg: &Message) -> CommandResult {
-    if let Some(code) = extract_second_word(&msg.content) {
+    // remove back ticks since we escape back ticks when showing the code.
+    if let Some(code) = extract_second_word(&msg.content.replace('`', "")) {
         match code.parse::<u32>() {
             Ok(code) => {
                 if let Some(word) = decode(Code { value: code }) {

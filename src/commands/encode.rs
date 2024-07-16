@@ -32,7 +32,7 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
                 };
 
                 msg.reply(ctx, reply).await?;
-                msg.reply(ctx, format!("`.play {value}`")).await?;
+                msg.reply(ctx, format!(".play `{value}`")).await?;
             }
         }
     } else {
