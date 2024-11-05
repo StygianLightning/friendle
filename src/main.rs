@@ -8,9 +8,11 @@ mod player;
 mod util;
 mod wordlist;
 
+use commands::daily::*;
 use commands::encode::*;
 use commands::help::*;
 use commands::play::*;
+
 use event_handler::Handler;
 use game_loop_hook::message_hook;
 use model::validate_word::validate_word_format;
@@ -28,7 +30,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 #[group]
-#[commands(encode, play)]
+#[commands(encode, play, daily)]
 struct General;
 
 pub const WORD_LIST_PATH_ENV_VAR: &str = "WORD_LIST_PATH";

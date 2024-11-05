@@ -10,6 +10,15 @@ use serenity::model::channel::Message;
 #[only_in(dm)]
 pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
     if let Some(word) = extract_second_word(&msg.content) {
+        validate_encode_and_post(ctx, msg, word).await?;
+    } else {
+        msg.reply(ctx, "Please provide a word.").await?;
+    }
+    Ok(())
+}
+
+pub async fn validate_encode_and_post (ctx: &Context, msg: &Message, word: &str) -> CommandResult {
+
         match validate_word_format(word) {
             Err(_) => {
                 msg.reply(
@@ -35,8 +44,5 @@ pub async fn encode(ctx: &Context, msg: &Message) -> CommandResult {
                 msg.reply(ctx, format!(".play `{value}`")).await?;
             }
         }
-    } else {
-        msg.reply(ctx, "Please provide a word.").await?;
-    }
     Ok(())
 }
